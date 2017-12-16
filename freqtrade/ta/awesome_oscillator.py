@@ -1,15 +1,20 @@
 from freqtrade.ta.ta import TA
 
 class awesome_oscillator(TA):
-    def set_params(self, args):
+    def __init__(self, strategy, args):
+        self.strategy = strategy
+        # first call the superclass main to handle common setup (boilerplate)
+        print('awesome create instance, args=%s' % args)
+        self.main(strategy, args)
+
+    def set_params(self, stategy, args):
         self.log.info('---------- awesome_oscillator set_params -------------')
-        self.df       = args['df']
+        self.log.info('args: %s' % args)
         self.weighted = args.setdefault('weighted', False)
         self.fast     = args.setdefault('fast', 5)
         self.slow     = args.setdefault('slow', 34)
 
-    def run_ind(self):
-        df = self.df
+    def run_ind(self, df):
         self.log.info('---------- run awesome_oscillator -------------')
         midprice = (df['high'] + df['low']) / 2
 
@@ -18,8 +23,4 @@ class awesome_oscillator(TA):
         else:
             ao = self.numpy_rolling_mean(midprice, self.fast) - \
                 self.numpy_rolling_mean(midprice, self.slow)
-        return self.series(ao)
-
-    def __init__(self, args):
-        # first call the superclass main to handle common setup (boilerplate)
-        self.main(args)
+        return self.series(df, ao)

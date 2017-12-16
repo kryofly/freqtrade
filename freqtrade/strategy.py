@@ -37,33 +37,33 @@ class Strategy():
 
     def name(self):
         return 'default'
-    
+
     # what indicators do we use
-    def indicators(self):
-      return [['sar',        None],
-              ['adx',        None],
-              ['fastd',      None],
-              ['fastk',      None],
-              ['blower',     None],
-              ['sma',        None],
-              ['tema',       None],
-              ['mfi',        None],
-              ['rsi',        None],
-              ['ema5',       None],
-              ['ema10',      None],
-              ['ema50',      None],
-              ['ema100',     None],
-              ['ao',         None],
-              ['macd',       None],
-              ['macdsignal', None],
-              #['macdhist',   None],
-              ['htsine',     None],
-              ['htleadsine', None],
-              #['plus_dm',    None],
-              #['plus_di',    None],
-              #['minus_dm',   None],
-              #['minus_di',   None]
-               ]
+    def select_indicators(self, some_filter):
+        self.log.info('selecting all indicators (default)')
+        return [['sar',        None],
+                ['adx',        None],
+                ['fastd',      None],
+                ['fastk',      None],
+                ['blower',     None],
+                ['sma',        None],
+                ['tema',       None],
+                ['mfi',        None],
+                ['rsi',        None],
+                ['ema5',       None],
+                ['ema10',      None],
+                ['ema50',      None],
+                ['ema100',     None],
+                ['ao',         {'fast':5, 'slow':34}],
+                ['macd',       None],
+                ['macdsignal', None],
+                ['macdhist',   None],
+                ['htsine',     None],
+                ['htleadsine', None],
+                ['plus_dm',    None],
+                ['plus_di',    None],
+                ['minus_dm',   None],
+                ['minus_di',   None]]
 
     # what currency pairs do we use for backtesting
     def backtest_pairs(self):

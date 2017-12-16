@@ -17,7 +17,6 @@ from freqtrade.strategy import Strategy
 from freqtrade.ta.awesome_oscillator import awesome_oscillator
 from freqtrade.ta.linear_comb import linear_comb
 
-
 logger = logging.getLogger(__name__)
 
 class SignalType(Enum):
@@ -43,41 +42,43 @@ def populate_indicators(strategy, dataframe: DataFrame) -> DataFrame:
     """
     Adds several different TA indicators to the given DataFrame
     """
-    logger.info('---- populating indicators ----')
-    inds = strategy.indicators()
+    logger.info('---- populating indicators from strategy %s----' % strategy.name())
+    inds = strategy.select_indicators(None)  # select indicators according to strategy
+    prepare_indicators(strategy, inds, dataframe) # possibly prepare them, before run
+    return dataframe
 
-    funs = {'sar': lambda: ta.SAR(dataframe),
-            'adx': lambda: ta.ADX(dataframe),
-            'fastd': lambda: ta.STOCHF(dataframe)['fastd'],
-            'fastk': lambda: ta.STOCHF(dataframe)['fastk'],
-            'blower': lambda: ta.BBANDS(dataframe, nbdevup=2, nbdevdn=2)['lowerband'],
-            'sma':   lambda: ta.SMA(dataframe, timeperiod=40),
-            'tema':  lambda: ta.TEMA(dataframe, timeperiod=9),
-            'mfi':   lambda: ta.MFI(dataframe),
-            'rsi':   lambda: ta.RSI(dataframe),
-            'ema5':  lambda: ta.EMA(dataframe, timeperiod=5),
-            'ema10': lambda: ta.EMA(dataframe, timeperiod=10),
-            'ema50': lambda: ta.EMA(dataframe, timeperiod=50),
-            'ema100':lambda: ta.EMA(dataframe, timeperiod=100),
-            'macd':  lambda: ta.MACD(dataframe)['macd'],
-            'macdsignal': lambda: ta.MACD(dataframe)['macdsignal'],
-            'macdhist': lambda:   ta.MACD(dataframe)['macdhist'],
-            'htsine':     lambda: ta.HT_SINE(dataframe)['sine'],
-            'htleadsine': lambda: ta.HT_SINE(dataframe)['leadsine'],
-            'plus_dm':  lambda: ta.PLUS_DM(dataframe),
-            'plus_di':  lambda: ta.PLUS_DI(dataframe),
-            'minus_dm': lambda: ta.MINUS_DM(dataframe),
-            'minus_di': lambda: ta.MINUS_DI(dataframe),
-            'ao':    lambda: awesome_oscillator({'df':dataframe, 'fast':5, 'slow':34}).run(),
-            'lin': lambda: linear_comb({'df': dataframe, 'input': ['low', 'high', 'rsi', 'fastd']}).run()
+def prepare_indicators(strategy: Strategy, inds: list, dataframe: DataFrame) -> list:
+    logger.info('---- preparing indicators ----')
+
+    funs = {'sar':    lambda _: ta.SAR(dataframe),
+            'adx':    lambda _: ta.ADX(dataframe),
+            'fastd':  lambda _: ta.STOCHF(dataframe)['fastd'],
+            'fastk':  lambda _: ta.STOCHF(dataframe)['fastk'],
+            'blower': lambda _: ta.BBANDS(dataframe, nbdevup=2, nbdevdn=2)['lowerband'],
+            'sma':    lambda _: ta.SMA(dataframe, timeperiod=40),
+            'tema':   lambda _: ta.TEMA(dataframe, timeperiod=9),
+            'mfi':    lambda _: ta.MFI(dataframe),
+            'rsi':    lambda _: ta.RSI(dataframe),
+            'ema5':   lambda _: ta.EMA(dataframe, timeperiod=5),
+            'ema10':  lambda _: ta.EMA(dataframe, timeperiod=10),
+            'ema50':  lambda _: ta.EMA(dataframe, timeperiod=50),
+            'ema100': lambda _: ta.EMA(dataframe, timeperiod=100),
+            'macd':   lambda _: ta.MACD(dataframe)['macd'],
+            'macdsignal': lambda _: ta.MACD(dataframe)['macdsignal'],
+            'macdhist':   lambda _: ta.MACD(dataframe)['macdhist'],
+            'htsine':     lambda _: ta.HT_SINE(dataframe)['sine'],
+            'htleadsine': lambda _: ta.HT_SINE(dataframe)['leadsine'],
+            'plus_dm':    lambda _: ta.PLUS_DM(dataframe),
+            'plus_di':    lambda _: ta.PLUS_DI(dataframe),
+            'minus_dm':   lambda _: ta.MINUS_DM(dataframe),
+            'minus_di':   lambda _: ta.MINUS_DI(dataframe),
+            'ao':  lambda args: awesome_oscillator(strategy,args).run(dataframe),
+            'lin': lambda args: linear_comb(strategy,args).run(dataframe)
             }
-
     for ind in inds:
         [name, args] = ind
-        logger.info('loading indicator: %s' % name)
-        dataframe[name] = funs[name]()
-
-    return dataframe
+        logger.info('preparing indicator: %s, args=%s' %(name,args))
+        dataframe[name] = funs[name](args)
 
 def analyze_ticker(strategy, ticker_history: List[Dict]) -> DataFrame:
     """

@@ -3,27 +3,33 @@ import numpy as np
 from freqtrade.ta.ta import TA
 
 class linear_comb(TA):
-    def set_params(self, args):
-        self.log.info('---------- linear_comb set_params -------------')
-        self.df       = args['df']
-        self.input    = args['input']
+    def __init__(self, strategy, args):
+        #print('--- func in init:', self) # check if we are using the same object
+        self._strategy = strategy # we need to set it here (cant do it in set_params)
+        self.main(strategy, args)
 
-    def run_ind(self):
-        df = self.df
+    def set_params(self, strategy, args):
+        self.log.info('---------- linear_comb set_params -------------')
+        self.input    = args['input']
+        self.stategy  = strategy # why doesn't this work?
+        #print('--- func in set_params:', self)
+
+    # above was only boilerplate, below is linear-combination stuff
+
+    def run_ind(self, df):
         input = self.input
+        #print('--- func in run_ind:', self)
+        strat = self._strategy
         # collect the indicators appointed to by the input, these
         # zip together the arrays making a matrix of time(row) x inputs(columns)
         # loop over the rows (where each row is a timeframe of indicators)
         # take the dot product between the row and our weights
         # store the product as output for this timeframe
-        self.log.info('---------- running linear_comb -------------')
+        self.log.info('---------- running linear_comb under strategy %s -------------' % strat.name())
         self.log.info('input: %s', input)
         midprice = (df['high'] + df['low']) / 2
 
-        return self.series(midprice)
-
-    def __init__(self, args):
-        self.main(args)
+        return self.series(df, midprice)
 
     def _init_weights(len):
         self.weights = np.random.randn(len) * 0.01
