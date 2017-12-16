@@ -1,9 +1,11 @@
+import sys
 import argparse
 import enum
 import json
 import logging
 import time
 from typing import Any, Callable, List, Dict
+from pandas import DataFrame
 
 from jsonschema import validate, Draft4Validator
 from jsonschema.exceptions import best_match, ValidationError
@@ -22,6 +24,23 @@ class State(enum.Enum):
 # Current application state
 _STATE = State.STOPPED
 
+def printdf(df: DataFrame) -> None:
+  print('==== begin print dataframe ====')
+  for pair, pair_data in df.items():
+      print('--- %s' % pair)
+      pkeys = pair_data.keys()
+      for key in pkeys:
+         sys.stdout.write(str(key + ',  '))
+      sys.stdout.write('\n')
+      val = pair_data[pkeys[0]].values
+      rows, = val.shape
+      for i in range(rows):
+        sys.stdout.write('')
+        for j in range(len(pkeys)):
+          v = pair_data[pkeys[j]].values
+          sys.stdout.write(str(v[i]) + ', ')
+        sys.stdout.write('\n')
+  print('==== end print dataframe ====')
 
 @synchronized
 def update_state(state: State) -> None:

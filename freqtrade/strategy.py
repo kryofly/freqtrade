@@ -10,6 +10,9 @@ class Strategy():
 
     def __init__(self):
         self.log = logging.getLogger(__name__)
+        self.default_config()
+        
+    def default_config(self):
         #### Edit these
         self._stake_currency = 'BTC', # base currency
         self._stake_amount = 0.01 # each trades maximum worth

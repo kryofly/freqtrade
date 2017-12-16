@@ -13,7 +13,7 @@ from tabulate import tabulate
 from freqtrade import exchange
 from freqtrade.exchange import Bittrex
 from freqtrade.main import min_roi_reached
-from freqtrade.misc import load_config
+from freqtrade.misc import load_config, printdf
 from freqtrade.optimize import load_data, preprocess
 from freqtrade.persistence import Trade
 from freqtrade.strategy import Strategy
@@ -226,9 +226,11 @@ def start(args):
     results = backtest(config, strategy,
                        prepdata, max_open_trades,
                        args.realistic_simulation)
+    printdf(prepdata)
     logger.info(
         '\n====================== BACKTESTING REPORT ======================================\n%s',
         generate_text_table(data, results, config['stake_currency'], args.ticker_interval)
     )
+
     if args.export_json:
         backtest_export_json(args, config, prepdata, results)
