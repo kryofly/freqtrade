@@ -11,9 +11,10 @@ import talib.abstract as ta
 from pandas import DataFrame, to_datetime
 
 from freqtrade.exchange import get_ticker_history
-from freqtrade.vendor.qtpylib.indicators import awesome_oscillator, crossed_above, crossed_below
+from freqtrade.vendor.qtpylib.indicators import crossed_above, crossed_below
 from freqtrade.dataframe import load_dataframe
 from freqtrade.strategy import Strategy
+from freqtrade.ta.awesome_oscillator import awesome_oscillator
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +57,7 @@ def populate_indicators(strategy, dataframe: DataFrame) -> DataFrame:
             'ema10': lambda: ta.EMA(dataframe, timeperiod=10),
             'ema50': lambda: ta.EMA(dataframe, timeperiod=50),
             'ema100':lambda: ta.EMA(dataframe, timeperiod=100),
-            'ao':    lambda: awesome_oscillator(dataframe),
+            'ao':    lambda: awesome_oscillator({'df':dataframe, 'fast':5, 'slow':34}).run(),
             'macd':  lambda: ta.MACD(dataframe)['macd'],
             'macdsignal': lambda: ta.MACD(dataframe)['macdsignal'],
             'macdhist': lambda:   ta.MACD(dataframe)['macdhist'],
