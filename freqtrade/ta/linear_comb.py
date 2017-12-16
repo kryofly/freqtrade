@@ -8,7 +8,7 @@ class linear_comb(TA):
         self.df       = args['df']
         self.input    = args['input']
 
-    def run(self):
+    def run_ind(self):
         df = self.df
         input = self.input
         # collect the indicators appointed to by the input, these
@@ -43,7 +43,7 @@ class linear_comb(TA):
             v[t] = input[ilen] # linear version of the input
             v[t+ilen]   = input[ilen] * input[ilen] # 1-degree non-linear of input
             # do some fancy non-linearization
-            v[t+ilen*2] = input[ilen] + input[ilen-t2] + m / bf # summarize+bleed
+            v[t+ilen*2] = input[ilen] - input[ilen-t2] + m / bf # difference+bleed
             v[t+ilen*3] = input[ilen] * input[ilen-t2] + m / bf # cross-over+bleed
             m = m * br + (v[t+ilen*2] + v[t+ilen*3]) * (1 - br) # bleed over
         return v

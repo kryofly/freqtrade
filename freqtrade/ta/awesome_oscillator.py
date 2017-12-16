@@ -1,4 +1,4 @@
-from freqtrade.ta.ta import TA, NAerror
+from freqtrade.ta.ta import TA
 
 class awesome_oscillator(TA):
     def set_params(self, args):
@@ -8,7 +8,7 @@ class awesome_oscillator(TA):
         self.fast     = args.setdefault('fast', 5)
         self.slow     = args.setdefault('slow', 34)
 
-    def run(self):
+    def run_ind(self):
         df = self.df
         self.log.info('---------- run awesome_oscillator -------------')
         midprice = (df['high'] + df['low']) / 2
@@ -18,7 +18,6 @@ class awesome_oscillator(TA):
         else:
             ao = self.numpy_rolling_mean(midprice, self.fast) - \
                 self.numpy_rolling_mean(midprice, self.slow)
-        #raise NAerror("cant calc now")
         return self.series(ao)
 
     def __init__(self, args):

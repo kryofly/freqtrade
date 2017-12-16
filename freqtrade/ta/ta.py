@@ -25,21 +25,13 @@ class TA():
         """Main function. Do not override this method."""
         self._log_prefix()
         self.set_params(args)
-        # do any TA options handling
-        try:
-            return self.run()
-        except NAerror as e:
-            self.log.exception("IND error N/A: %s" % e.message)
-            return []
 
-        # take care of any results, that can be handled commonly
-        self.log.info("doing IND cleanup")
-        #self._stop_logging()
-        return self.result
-
+    # provide a wrapper around the run_ind(icator) call, to do boilerstuff
     def run(self):
-        """IND is not implemented"""
-        raise NotImplementedError
+        try:
+            self.run_ind()
+        except AttributeError:
+            raise NotImplementedError # Include the object name
 
     def numpy_rolling_mean(self,a,b):
         return numpy_rolling_mean(a,b)
@@ -51,9 +43,3 @@ class TA():
     # private helper methods, subclass instances should not use these
     def _log_prefix(self): # change the log-prefix
         self.log = logging.getLogger(__name__)
-
-
-class NAerror(Exception):
-    """This exception is raised when IND is N/A to current data"""
-    def __init__(self, message):
-        self.message = message
