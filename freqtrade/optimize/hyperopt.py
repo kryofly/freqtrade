@@ -4,6 +4,7 @@
 import json
 import logging
 import sys
+import math
 from functools import reduce
 from math import exp
 from operator import itemgetter
@@ -129,6 +130,8 @@ def optimizer(params):
     result = format_results(results)
 
     total_profit = results.profit.sum() * 1000
+    if math.isnan(total_profit):
+        total_profit = 0
     trade_count = len(results.index)
 
     trade_loss = 1 - 0.35 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.2)
