@@ -35,7 +35,7 @@ AVG_PROFIT_TO_BEAT = 0.2
 AVG_DURATION_TO_BEAT = 50
 
 # Configuration and data used by hyperopt
-PROCESSED = optimize.preprocess(optimize.load_data())
+PROCESSED = None
 OPTIMIZE_CONFIG = {
     'max_open_trades': 3,
     'stake_currency': 'BTC',
@@ -219,6 +219,8 @@ def buy_strategy_generator(params):
 
 def start(args):
     global TOTAL_TRIES
+    global PROCESSED
+    PROCESSED = optimize.preprocess(optimize.load_data())
     TOTAL_TRIES = args.epochs
 
     exchange._API = Bittrex({'key': '', 'secret': ''})
