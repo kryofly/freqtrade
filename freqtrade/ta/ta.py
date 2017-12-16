@@ -30,7 +30,7 @@ class TA():
     # provide a wrapper around the run_ind(icator) call, to do boilerstuff
     def run(self, df):
         try:
-            self.run_ind(df)
+            return self.run_ind(df)
         except AttributeError:
             raise NotImplementedError # Include the object name
 

@@ -19,11 +19,11 @@ class LinCombStrategy(Strategy):
     
     # what indicators do we use
     def select_indicators(self, some_filter):
-      return [['rsi',        None], # A list of indicators used by
-              ['ema5',       None], # the linear-combination
-              ['ema10',       None], # the linear-combination
+      return [['rsi',   None], # A list of indicators used by
+              ['ema5',  None], # the linear-combination
+              ['ema10', None], # the linear-combination
               # finally a the linear-combination indicator itself,
-              ['lin',    {'input':['high','low','rsi','ema5','ema10']}]] # lin, it is here the result of linear-comb is stored
+              ['lin',   {'input':['high','low','rsi','ema5','ema10']}]] # lin, it is here the result of linear-comb is stored
 
     # what currency pairs do we use for backtesting
     def backtest_pairs(self):
@@ -37,13 +37,11 @@ class LinCombStrategy(Strategy):
             print('---- using hyper params instead')
             return self.use_hyper_params (dataframe)
         else:
-            dataframe.loc[crossed_above(dataframe['lin'], -3),
-                          'buy'] = 1
+            dataframe.loc[crossed_above(dataframe['lin'], -3), 'buy'] = 1
             return dataframe
 
     def populate_sell_trend(self, dataframe: DataFrame) -> DataFrame:
-        dataframe.loc[crossed_below(dataframe['lin'], -3),
-                      'sell'] = 1
+        dataframe.loc[crossed_below(dataframe['lin'], -3), 'sell'] = 1
         return dataframe
 
     # hyper optimize (learn parameters)
