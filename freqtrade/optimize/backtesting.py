@@ -1,8 +1,10 @@
 # pragma pylint: disable=missing-docstring,W0212
 
-
+import math
 import logging
 from typing import Tuple, Dict
+
+import json
 
 import arrow
 from pandas import DataFrame
@@ -18,6 +20,52 @@ from freqtrade.strategy import Strategy
 
 logger = logging.getLogger(__name__)
 
+def backtest_export_json(args, config, prepdata, results):
+    logger.info('export to json file %s', args.export_json)
+    tickint = str(args.ticker_interval)
+    h = open(args.export_json, 'w')
+    h.write('{"ticker_interval": %s,\n' % tickint)
+    h.write('"pairs":[\n')
+    i = 0
+    for pair, pair_data in prepdata.items():
+        if i > 0:
+            h.write(',')
+        i += 1
+        h.write('"%s":{' % pair)
+        pkeys = pair_data.keys()
+        j = 0
+        for key in pkeys:
+            if j > 0:
+                h.write(',')
+            j += 1
+            h.write('"%s":[' % key)
+            val = pair_data[key]
+            sorted = val.sort_index()
+            k = 0
+            date = False
+            if key == 'date':
+                date = True
+            for col in sorted.index:
+                if k > 0:
+                    h.write(',')
+                k += 1
+                v = val[col]
+                if date:
+                    h.write('"%s"' % v)
+                else:
+                    if float(v):
+                        if math.isnan(v):
+                            h.write('null')
+                        else:
+                            h.write('%f' % v)
+                    else:
+                        h.write('"%s"' % v)
+            h.write(']\n')
+        h.write('}\n')
+    h.write('],\n"results":\n')
+    h.write(results.to_json())
+    h.write('}\n')
+    h.close()
 
 def get_timeframe(data: Dict[str, Dict]) -> Tuple[arrow.Arrow, arrow.Arrow]:
     """
@@ -175,10 +223,13 @@ def start(args):
     main._CONF = config
 
     # Execute backtest and print results
+    prepdata = preprocess(strategy, data)
     results = backtest(config, strategy,
-                       preprocess(strategy, data), max_open_trades,
+                       prepdata, max_open_trades,
                        args.realistic_simulation)
     logger.info(
         '\n====================== BACKTESTING REPORT ======================================\n%s',
         generate_text_table(data, results, config['stake_currency'], args.ticker_interval)
     )
+    if args.export_json:
+        backtest_export_json(args, config, prepdata, results)

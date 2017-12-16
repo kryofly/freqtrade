@@ -180,6 +180,12 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         action='store_true',
         dest='realistic_simulation',
     )
+    backtesting_cmd.add_argument(
+        '--export-json',
+        help='export backtest result to a JSON encoded file',
+        default=False,
+        dest='export_json'
+    )
 
     # Add hyperopt subcommand
     hyperopt_cmd = subparsers.add_parser('hyperopt', help='hyperopt module')
