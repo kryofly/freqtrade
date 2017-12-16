@@ -15,6 +15,8 @@ from freqtrade.vendor.qtpylib.indicators import crossed_above, crossed_below
 from freqtrade.dataframe import load_dataframe
 from freqtrade.strategy import Strategy
 from freqtrade.ta.awesome_oscillator import awesome_oscillator
+from freqtrade.ta.linear_comb import linear_comb
+
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +59,6 @@ def populate_indicators(strategy, dataframe: DataFrame) -> DataFrame:
             'ema10': lambda: ta.EMA(dataframe, timeperiod=10),
             'ema50': lambda: ta.EMA(dataframe, timeperiod=50),
             'ema100':lambda: ta.EMA(dataframe, timeperiod=100),
-            'ao':    lambda: awesome_oscillator({'df':dataframe, 'fast':5, 'slow':34}).run(),
             'macd':  lambda: ta.MACD(dataframe)['macd'],
             'macdsignal': lambda: ta.MACD(dataframe)['macdsignal'],
             'macdhist': lambda:   ta.MACD(dataframe)['macdhist'],
@@ -66,7 +67,9 @@ def populate_indicators(strategy, dataframe: DataFrame) -> DataFrame:
             'plus_dm':  lambda: ta.PLUS_DM(dataframe),
             'plus_di':  lambda: ta.PLUS_DI(dataframe),
             'minus_dm': lambda: ta.MINUS_DM(dataframe),
-            'minus_di': lambda: ta.MINUS_DI(dataframe)
+            'minus_di': lambda: ta.MINUS_DI(dataframe),
+            'ao':    lambda: awesome_oscillator({'df':dataframe, 'fast':5, 'slow':34}).run(),
+            'lin': lambda: linear_comb({'df': dataframe, 'input': ['low', 'high', 'rsi', 'fastd']}).run()
             }
 
     for ind in inds:
