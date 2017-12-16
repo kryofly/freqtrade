@@ -21,9 +21,11 @@ class LinCombStrategy(Strategy):
     def select_indicators(self, some_filter):
       return [['rsi',   None], # A list of indicators used by
               ['ema5',  None], # the linear-combination
-              ['ema10', None], # the linear-combination
+              ['fastk', None], # the linear-combination
               # finally a the linear-combination indicator itself,
-              ['lin',   {'input':['high','low','rsi','ema5','ema10']}]] # lin, it is here the result of linear-comb is stored
+              ['lin',   {'input':['high','low','rsi','ema5','fastk'], # what signals to use
+                         'scale':[10,10,0.01,10,0.01] # scale each signal by this amount
+                        }]] # lin, it is here the result of linear-comb is stored
 
     # what currency pairs do we use for backtesting
     def backtest_pairs(self):

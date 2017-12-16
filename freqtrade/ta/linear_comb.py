@@ -22,6 +22,7 @@ class linear_comb(TA):
         # we could put the weights-filename in the args
         #self.weightsfile = args['weightsfile']
         self.input    = args['input']
+        self.scale    = args['scale']
         self.stategy  = strategy # why doesn't this work?
         try:
             self._weights = np.loadtxt('w')
@@ -46,16 +47,24 @@ class linear_comb(TA):
 
         self.log.info('---------- running linear_comb under strategy %s -------------' % strat.name())
         self.log.info('input: %s', inputnames)
+        self.log.info('scale: %s', self.scale)
+
         input = np.column_stack([df[x].tolist() for x in inputnames])
+        input = input * self.scale # apply scale which makes the gradient space easier to traverse(learn)
 
         # input is now a matrix where row is time, and column is feature
         # lincomb will feature-expand the input (do some simple non-linearity)
         # then take dotproduct of row and weights (just element-multiply and sum)
         # and put the result in df['lin]
-        z = self._lincomb(input)
+        z = np.float32(self._lincomb(input))
 
+        # save to disk, all relevant data that is needed for off-line learning
         # need to load the weights from disk, where they have been pre-trained
-        w = self._weights # retreive the weights from the mythical place
+        w = np.float32(self._weights) # retreive the weights from the mythical place
+        x = np.float32(self._feature_vector(input))
+        np.savetxt('w', w)     # weights
+        np.savetxt('x',  np.float32(input), fmt='%2.4e') # input
+        np.savetxt('fx', np.float32(x), fmt='%2.4e')    # featurized input
 
         rows, = z.shape
         for i in range(rows):
@@ -90,9 +99,9 @@ class linear_comb(TA):
                 j2 = np.abs(j - 1);
                 jj = j % cols
                 o[i][j]        = input[i][jj] # linear version of the input
-                o[i][j+cols]   = input[i][jj] * input[i][jj] # 1-degree non-linear of input
+                o[i][j+cols]   = (input[i][jj] * input[i][jj])/2 # 1-degree non-linear of input
                 # do some fancy non-linearization
                 o[i][j+cols*2] = input[i][jj]  - input[i][j2]  + b / bf # difference+bleed
                 o[i][j+cols*3] = input[i1][jj] - input[i2][jj] + b / bf # temporal+bleed
-                b = b * br + (o[i][j+cols*2] + o[i][j+cols*3]) * (1 - br) # bleed over
+                b = b * br + (o[i][j+cols*2] + o[i][j+cols*3])/2 * (1 - br) # bleed over
         return o
