@@ -344,8 +344,7 @@ def main() -> None:
             logger.info('Dry run is disabled. (--dry_run_db ignored)')
 
     print('---- loading strategy----', args.strategy)
-    strategy = Strategy() #.load(args.strategy, args.strategy)
-    strategy.load(args.strategy)
+    strategy = Strategy().load(args.strategy)
     print('loaded strategy----', strategy.name())
     STRATEGY=strategy
 

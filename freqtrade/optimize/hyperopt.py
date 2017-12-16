@@ -136,8 +136,7 @@ def start(args):
         trials = Trials()
 
     logger.info('loading strategy, file: %s' % args.strategy)
-    strategy = Strategy()
-    strategy.load(args.strategy)
+    strategy = Strategy().load(args.strategy)
     logger.info('loaded strategy %s' % strategy.name())
     STRATEGY = strategy
 

@@ -182,8 +182,7 @@ def start(args):
     logger.info('Using ticker_interval: %s ...', args.ticker_interval)
     
     logger.info('loading strategy, file: %s' % args.strategy)
-    strategy = Strategy()
-    strategy.load(args.strategy)
+    strategy = Strategy().load(args.strategy)
     logger.info('loaded strategy %s' % strategy.name())
 
     data = {}

@@ -1,4 +1,6 @@
 import logging
+#import modulelib
+import importlib
 from functools import reduce
 from hyperopt import hp
 from pandas import DataFrame
@@ -24,9 +26,14 @@ class Strategy():
         
     def load(self, filename):
         if filename is not None:
-            self.log.info('loading file:', filename)
+            self.log.info('loading file: %s' % filename)
+            mod = importlib.__import__(filename)
+            classname = mod.classname
+            cl = getattr(mod, classname)
+            return cl()
         else:
             self.log.info('using default strategy')
+            return self
 
     def name(self):
         return 'default'
