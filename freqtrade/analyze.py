@@ -11,16 +11,14 @@ import talib.abstract as ta
 from pandas import DataFrame, to_datetime
 
 from freqtrade.exchange import get_ticker_history
-from freqtrade.vendor.qtpylib.indicators import awesome_oscillator, crossed_above
+from freqtrade.vendor.qtpylib.indicators import awesome_oscillator, crossed_above, crossed_below
 
 logger = logging.getLogger(__name__)
-
 
 class SignalType(Enum):
     """ Enum to distinguish between buy and sell signals """
     BUY = "buy"
     SELL = "sell"
-
 
 def parse_ticker_dataframe(ticker: list) -> DataFrame:
     """
@@ -35,7 +33,6 @@ def parse_ticker_dataframe(ticker: list) -> DataFrame:
     frame['date'] = to_datetime(frame['date'], utc=True, infer_datetime_format=True)
     frame.sort_values('date', inplace=True)
     return frame
-
 
 def populate_indicators(dataframe: DataFrame) -> DataFrame:
     """
@@ -126,7 +123,6 @@ def analyze_ticker(ticker_history: List[Dict]) -> DataFrame:
     dataframe = populate_buy_trend(dataframe)
     dataframe = populate_sell_trend(dataframe)
     return dataframe
-
 
 def get_signal(pair: str, signal: SignalType) -> bool:
     """
