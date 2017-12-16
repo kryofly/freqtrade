@@ -9,12 +9,12 @@ from pandas import DataFrame
 from tabulate import tabulate
 
 from freqtrade import exchange
-from freqtrade.analyze import populate_buy_trend, populate_sell_trend
 from freqtrade.exchange import Bittrex
 from freqtrade.main import min_roi_reached
 from freqtrade.misc import load_config
 from freqtrade.optimize import load_data, preprocess
 from freqtrade.persistence import Trade
+from freqtrade.strategy import Strategy
 
 logger = logging.getLogger(__name__)
 
@@ -62,9 +62,11 @@ def generate_text_table(data: Dict[str, Dict], results: DataFrame, stake_currenc
     ])
     return tabulate(tabular_data, headers=headers)
 
-
-def backtest(config: Dict, processed: Dict[str, DataFrame],
-             max_open_trades: int = 0, realistic: bool = True) -> DataFrame:
+def backtest(config: Dict,
+             strategy: Strategy,
+             processed: Dict[str, DataFrame],
+             max_open_trades: int = 0,
+             realistic: bool = True) -> DataFrame:
     """
     Implements backtesting functionality
     :param config: config to use
@@ -78,7 +80,7 @@ def backtest(config: Dict, processed: Dict[str, DataFrame],
     exchange._API = Bittrex({'key': '', 'secret': ''})
     for pair, pair_data in processed.items():
         pair_data['buy'], pair_data['sell'] = 0, 0
-        ticker = populate_sell_trend(populate_buy_trend(pair_data))
+        ticker = strategy.populate_sell_trend(strategy.populate_buy_trend(pair_data))
         # for each buy point
         lock_pair_until = None
         for row in ticker[ticker.buy == 1].itertuples(index=True):
@@ -93,11 +95,10 @@ def backtest(config: Dict, processed: Dict[str, DataFrame],
             if max_open_trades > 0:
                 # Increase lock
                 trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
-
             trade = Trade(
                 open_rate=row.close,
                 open_date=row.date,
-                amount=config['stake_amount'],
+                amount = strategy.stake_amount(),
                 fee=exchange.get_fee() * 2
             )
 
@@ -107,7 +108,7 @@ def backtest(config: Dict, processed: Dict[str, DataFrame],
                     # Increase trade_count_lock for every iteration
                     trade_count_lock[row2.date] = trade_count_lock.get(row2.date, 0) + 1
 
-                if min_roi_reached(trade, row2.close, row2.date) or row2.sell == 1:
+                if min_roi_reached(strategy, trade, row2.close, row2.date) or row2.sell == 1:
                     current_profit = trade.calc_profit(row2.close)
                     lock_pair_until = row2.Index
 
@@ -124,24 +125,39 @@ def start(args):
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     )
 
+    print('---- backtesting start ----')
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
     logger.info('Using config: %s ...', args.config)
     config = load_config(args.config)
 
     logger.info('Using ticker_interval: %s ...', args.ticker_interval)
+    
+    logger.info('loading strategy, file: %s' % args.strategy)
+    strategy = Strategy()
+    strategy.load(args.strategy)
+    logger.info('loaded strategy %s' % strategy.name())
 
     data = {}
+    pairs = config['exchange']['pair_whitelist']
+    if pairs == []: # if there was an empty pairs_whitelist in config
+        pairs = strategy.backtest_pairs()
     if args.live:
         logger.info('Downloading data for all pairs in whitelist ...')
-        for pair in config['exchange']['pair_whitelist']:
+        for pair in pairs:
             data[pair] = exchange.get_ticker_history(pair, args.ticker_interval)
     else:
-        logger.info('Using local backtesting data (ignoring whitelist in given config) ...')
-        data = load_data(args.ticker_interval)
+        logger.info('Using local backtesting data, pairs: %s' % pairs)
+        data = load_data(args.ticker_interval, pairs)
 
-        logger.info('Using stake_currency: %s ...', config['stake_currency'])
-        logger.info('Using stake_amount: %s ...', config['stake_amount'])
+    amount = config['stake_amount']
+    if amount == 0:
+        amount = strategy.stake_amount()
+    currency = config['stake_currency']
+    if currency == None:
+        currency = strategy.stake_currency()
+    logger.info('Using stake_currency: %s ...', currency)
+    logger.info('Using stake_amount: %s ...', amount)
 
     # Print timeframe
     min_date, max_date = get_timeframe(data)
@@ -149,17 +165,19 @@ def start(args):
 
     max_open_trades = 0
     if args.realistic_simulation:
-        logger.info('Using max_open_trades: %s ...', config['max_open_trades'])
         max_open_trades = config['max_open_trades']
+    else:
+        max_open_trades = strategy.max_open_trades()
+    logger.info('Using max_open_trades: %s ...', max_open_trades)
 
     # Monkey patch config
     from freqtrade import main
     main._CONF = config
 
     # Execute backtest and print results
-    results = backtest(
-        config, preprocess(data), max_open_trades, args.realistic_simulation
-    )
+    results = backtest(config, strategy,
+                       preprocess(strategy, data), max_open_trades,
+                       args.realistic_simulation)
     logger.info(
         '\n====================== BACKTESTING REPORT ======================================\n%s',
         generate_text_table(data, results, config['stake_currency'], args.ticker_interval)

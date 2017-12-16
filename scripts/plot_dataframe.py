@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 
 from freqtrade import exchange, analyze
 from freqtrade.dataframe import load_dataframe
+from freqtrade.strategy import Strategy
 
 
 def plot_analyzed_dataframe(pair: str) -> None:
@@ -14,13 +15,14 @@ def plot_analyzed_dataframe(pair: str) -> None:
     :param pair: pair as str
     :return: None
     """
+    strategy = Strategy()
 
     # Init Bittrex to use public API
     exchange._API = exchange.Bittrex({'key': '', 'secret': ''})
 
     ld = load_dataframe(ticker_interval=5, pairs=pair)
     d = ld[pair[0]];
-    dataframe = analyze.analyze_ticker(d)
+    dataframe = analyze.analyze_ticker(strategy,d)
 
     dataframe.loc[dataframe['buy']  == 1, 'buy_price']  = dataframe['close']
     dataframe.loc[dataframe['sell'] == 1, 'sell_price'] = dataframe['close']

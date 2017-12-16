@@ -86,6 +86,7 @@ def parse_args(args: List[str]):
     Parses given arguments and returns an argparse Namespace instance.
     Returns None if a sub command has been selected and executed.
     """
+    print('-------- parsing args ----------')
     parser = argparse.ArgumentParser(
         description='Simple High Frequency Trading Bot for crypto currencies'
     )
@@ -126,20 +127,33 @@ def parse_args(args: List[str]):
         action='store_true',
         dest='dry_run_db',
     )
+    parser.add_argument(
+        '-s', '--strategy',
+        help='specify trading strategy file (default: freqtrade/strategy.py)',
+        dest='strategy',
+        type=str,
+        metavar='PATH',
+    )
+    print('-------- parsing args, build subcommand ----------')
     build_subcommands(parser)
     parsed_args = parser.parse_args(args)
+    print('-------- parsing args, parsed args ----------')
 
     # No subcommand as been selected
     if not hasattr(parsed_args, 'func'):
         return parsed_args
 
+    print('-------- FIX: dont call func here, only parse ----------', parsed_args.func)
     parsed_args.func(parsed_args)
+    print('-------- done calling func in parsing args')
     return None
 
 
 def build_subcommands(parser: argparse.ArgumentParser) -> None:
     """ Builds and attaches all subcommands """
+    print('-------- build_subcommand importing ----------')
     from freqtrade.optimize import backtesting, hyperopt
+    print('-------- build_subcommand done importing ----------')
 
     subparsers = parser.add_subparsers(dest='subparser')
 
@@ -185,14 +199,13 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         action='store_true',
     )
 
-
 # Required json-schema for user specified config
 CONF_SCHEMA = {
     'type': 'object',
     'properties': {
         'max_open_trades': {'type': 'integer', 'minimum': 1},
         'stake_currency': {'type': 'string', 'enum': ['BTC', 'ETH', 'USDT']},
-        'stake_amount': {'type': 'number', 'minimum': 0.0005},
+        'stake_amount': {'type': 'number', 'minimum': 0},
         'dry_run': {'type': 'boolean'},
         'minimal_roi': {
             'type': 'object',

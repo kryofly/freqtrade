@@ -17,6 +17,7 @@ from freqtrade import exchange, optimize
 from freqtrade.exchange import Bittrex
 from freqtrade.optimize.backtesting import backtest
 from freqtrade.vendor.qtpylib.indicators import crossed_above
+from freqtrade.strategy import Strategy
 
 # Remove noisy log messages
 logging.getLogger('hyperopt.mongoexp').setLevel(logging.WARNING)
@@ -36,72 +37,11 @@ AVG_DURATION_TO_BEAT = 50
 
 # Configuration and data used by hyperopt
 PROCESSED = None
-OPTIMIZE_CONFIG = {
-    'max_open_trades': 3,
-    'stake_currency': 'BTC',
-    'stake_amount': 0.01,
-    'minimal_roi': {
-        '40':  0.0,
-        '30':  0.01,
-        '20':  0.02,
-        '0':  0.04,
-    },
-    'stoploss': -0.10,
-}
+STRATEGY = None
 
 # Monkey patch config
 from freqtrade import main
-main._CONF = OPTIMIZE_CONFIG
-
-
-SPACE = {
-    'mfi': hp.choice('mfi', [
-        {'enabled': False},
-        {'enabled': True, 'value': hp.quniform('mfi-value', 5, 25, 1)}
-    ]),
-    'fastd': hp.choice('fastd', [
-        {'enabled': False},
-        {'enabled': True, 'value': hp.quniform('fastd-value', 10, 50, 1)}
-    ]),
-    'adx': hp.choice('adx', [
-        {'enabled': False},
-        {'enabled': True, 'value': hp.quniform('adx-value', 15, 50, 1)}
-    ]),
-    'rsi': hp.choice('rsi', [
-        {'enabled': False},
-        {'enabled': True, 'value': hp.quniform('rsi-value', 20, 40, 1)}
-    ]),
-    'uptrend_long_ema': hp.choice('uptrend_long_ema', [
-        {'enabled': False},
-        {'enabled': True}
-    ]),
-    'uptrend_short_ema': hp.choice('uptrend_short_ema', [
-        {'enabled': False},
-        {'enabled': True}
-    ]),
-    'over_sar': hp.choice('over_sar', [
-        {'enabled': False},
-        {'enabled': True}
-    ]),
-    'green_candle': hp.choice('green_candle', [
-        {'enabled': False},
-        {'enabled': True}
-    ]),
-    'uptrend_sma': hp.choice('uptrend_sma', [
-        {'enabled': False},
-        {'enabled': True}
-    ]),
-    'trigger': hp.choice('trigger', [
-        {'type': 'lower_bb'},
-        {'type': 'faststoch10'},
-        {'type': 'ao_cross_zero'},
-        {'type': 'ema5_cross_ema10'},
-        {'type': 'macd_cross_signal'},
-        {'type': 'sar_reversal'},
-        {'type': 'stochf_cross'},
-        {'type': 'ht_sine'},
-    ]),
-}
+main._CONF = {} # clear it, so we are safe not to use main config, ie avoid going live for some bug/reason
 
 def log_results(results):
     "if results is better than _TO_BEAT show it"
@@ -123,9 +63,9 @@ def optimizer(params):
     global _CURRENT_TRIES
 
     from freqtrade.optimize import backtesting
-    backtesting.populate_buy_trend = buy_strategy_generator(params)
+    STRATEGY.set_hyper_params(params)
 
-    results = backtest(OPTIMIZE_CONFIG, PROCESSED)
+    results = backtest({}, STRATEGY, PROCESSED)
 
     result = format_results(results)
 
@@ -171,56 +111,11 @@ def format_results(results: DataFrame):
                 results.duration.mean() * 5,
             )
 
-
-def buy_strategy_generator(params):
-    def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
-        conditions = []
-        # GUARDS AND TRENDS
-        if params['uptrend_long_ema']['enabled']:
-            conditions.append(dataframe['ema50'] > dataframe['ema100'])
-        if params['uptrend_short_ema']['enabled']:
-            conditions.append(dataframe['ema5'] > dataframe['ema10'])
-        if params['mfi']['enabled']:
-            conditions.append(dataframe['mfi'] < params['mfi']['value'])
-        if params['fastd']['enabled']:
-            conditions.append(dataframe['fastd'] < params['fastd']['value'])
-        if params['adx']['enabled']:
-            conditions.append(dataframe['adx'] > params['adx']['value'])
-        if params['rsi']['enabled']:
-            conditions.append(dataframe['rsi'] < params['rsi']['value'])
-        if params['over_sar']['enabled']:
-            conditions.append(dataframe['close'] > dataframe['sar'])
-        if params['green_candle']['enabled']:
-            conditions.append(dataframe['close'] > dataframe['open'])
-        if params['uptrend_sma']['enabled']:
-            prevsma = dataframe['sma'].shift(1)
-            conditions.append(dataframe['sma'] > prevsma)
-
-        # TRIGGERS
-        triggers = {
-            'lower_bb': dataframe['tema'] <= dataframe['blower'],
-            'faststoch10': (crossed_above(dataframe['fastd'], 10.0)),
-            'ao_cross_zero': (crossed_above(dataframe['ao'], 0.0)),
-            'ema5_cross_ema10': (crossed_above(dataframe['ema5'], dataframe['ema10'])),
-            'macd_cross_signal': (crossed_above(dataframe['macd'], dataframe['macdsignal'])),
-            'sar_reversal': (crossed_above(dataframe['close'], dataframe['sar'])),
-            'stochf_cross': (crossed_above(dataframe['fastk'], dataframe['fastd'])),
-            'ht_sine': (crossed_above(dataframe['htleadsine'], dataframe['htsine'])),
-        }
-        conditions.append(triggers.get(params['trigger']['type']))
-
-        dataframe.loc[
-            reduce(lambda x, y: x & y, conditions),
-            'buy'] = 1
-
-        return dataframe
-    return populate_buy_trend
-
-
 def start(args):
     global TOTAL_TRIES
     global PROCESSED
-    PROCESSED = optimize.preprocess(optimize.load_data())
+    global STRATEGY
+
     TOTAL_TRIES = args.epochs
 
     exchange._API = Bittrex({'key': '', 'secret': ''})
@@ -240,7 +135,20 @@ def start(args):
     else:
         trials = Trials()
 
-    best = fmin(fn=optimizer, space=SPACE, algo=tpe.suggest, max_evals=TOTAL_TRIES, trials=trials)
+    logger.info('loading strategy, file: %s' % args.strategy)
+    strategy = Strategy()
+    strategy.load(args.strategy)
+    logger.info('loaded strategy %s' % strategy.name())
+    STRATEGY = strategy
+
+    # load raw tick data from disk
+    dfs = optimize.load_data(strategy.tick_interval(),
+                             strategy.backtest_pairs())
+    # preprocess it by adding INDicators/OSCillators and
+    # also BUY/SELL trigger-vectors
+    PROCESSED = optimize.preprocess(strategy, dfs)
+
+    best = fmin(fn=optimizer, space=strategy.buy_strategy_space(), algo=tpe.suggest, max_evals=TOTAL_TRIES, trials=trials)
     logger.info('Best parameters:\n%s', json.dumps(best, indent=4))
     results = sorted(trials.results, key=itemgetter('loss'))
     logger.info('Best Result:\n%s', results[0]['result'])

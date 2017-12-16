@@ -17,19 +17,23 @@ from freqtrade.analyze import get_signal, SignalType
 from freqtrade.misc import State, get_state, update_state, parse_args, throttle, \
     load_config
 from freqtrade.persistence import Trade
+from freqtrade.strategy import Strategy
 
 logger = logging.getLogger('freqtrade')
 
 _CONF = {}
 
+STRATEGY = None
 
-def refresh_whitelist(whitelist: Optional[List[str]] = None) -> None:
+print('---- this is main.py ----')
+
+def refresh_whitelist(strategy: Strategy, whitelist: Optional[List[str]] = None) -> None:
     """
     Check wallet health and remove pair from whitelist if necessary
     :param whitelist: a new whitelist (optional)
     :return: None
     """
-    whitelist = whitelist or _CONF['exchange']['pair_whitelist']
+    whitelist = whitelist or _CONF['exchange']['pair_whitelist'] or strategy.live_pairs()
 
     sanitized_whitelist = []
     health = exchange.get_wallet_health()
@@ -59,8 +63,8 @@ def _process(dynamic_whitelist: Optional[int] = 0) -> bool:
     state_changed = False
     try:
         # Refresh whitelist based on wallet maintenance
-        refresh_whitelist(
-            gen_pair_whitelist(_CONF['stake_currency'], topn = dynamic_whitelist) if dynamic_whitelist else None
+        refresh_whitelist(STRATEGY,
+            gen_pair_whitelist(STRATEGY.stake_currency(), topn = dynamic_whitelist) if dynamic_whitelist else None
         )
         # Query trades from persistence layer
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
@@ -125,20 +129,19 @@ def execute_sell(trade: Trade, limit: float) -> None:
     ))
     Trade.session.flush()
 
-
-def min_roi_reached(trade: Trade, current_rate: float, current_time: datetime) -> bool:
+def min_roi_reached(strategy: Strategy, trade: Trade, current_rate: float, current_time: datetime) -> bool:
     """
     Based an earlier trade and current price and ROI configuration, decides whether bot should sell
     :return True if bot should sell at current rate
     """
     current_profit = trade.calc_profit(current_rate)
-    if 'stoploss' in _CONF and current_profit < float(_CONF['stoploss']):
+    if current_profit < strategy.stoploss():
         logger.debug('Stop loss hit.')
         return True
 
     # Check if time matches and current rate is above threshold
     time_diff = (current_time - trade.open_date).total_seconds() / 60
-    for duration, threshold in sorted(_CONF['minimal_roi'].items()):
+    for duration, threshold in sorted(strategy.minimal_roi().items()):
         if time_diff > float(duration) and current_profit > threshold:
             return True
 
@@ -158,13 +161,13 @@ def handle_trade(trade: Trade) -> bool:
     current_rate = exchange.get_ticker(trade.pair)['bid']
 
     # Check if minimal roi has been reached
-    if not min_roi_reached(trade, current_rate, datetime.utcnow()):
+    if not min_roi_reached(STRATEGY, trade, current_rate, datetime.utcnow()):
         return False
 
     # Check if sell signal has been enabled and triggered
     if _CONF.get('experimental', {}).get('use_sell_signal'):
         logger.debug('Checking sell_signal ...')
-        if not get_signal(trade.pair, SignalType.SELL):
+        if not get_signal(trade.strategy, trade.pair, SignalType.SELL):
             return False
 
     execute_sell(trade, current_rate)
@@ -207,7 +210,7 @@ def create_trade(stake_amount: float) -> bool:
 
     # Pick pair based on StochRSI buy signals
     for _pair in whitelist:
-        if get_signal(_pair, SignalType.BUY):
+        if get_signal(STRATEGY,_pair, SignalType.BUY):
             pair = _pair
             break
     else:
@@ -234,7 +237,8 @@ def create_trade(stake_amount: float) -> bool:
         open_rate=buy_limit,
         open_date=datetime.utcnow(),
         exchange=exchange.get_name().upper(),
-        open_order_id=order_id
+        open_order_id=order_id,
+        strategy=STRATEGY # A nice workaround, each trade could have a different Strategy 
     )
     Trade.session.add(trade)
     Trade.session.flush()
@@ -301,8 +305,13 @@ def main() -> None:
     Loads and validates the config and handles the main loop
     :return: None
     """
+    global STRATEGY
+
+    print('---- this is main() ----')
     global _CONF
+    print('---- main calling parse_args! ----')
     args = parse_args(sys.argv[1:])
+    print('---- done parsing args ----')
     if not args:
         exit(0)
 
@@ -317,7 +326,8 @@ def main() -> None:
         __version__,
         logging.getLevelName(args.loglevel)
     )
-
+    print('---- main loading config ----')
+    
     # Load and validate configuration
     _CONF = load_config(args.config)
 
@@ -332,6 +342,12 @@ def main() -> None:
             logger.info('Dry_run will use the DB file: "tradesv3.dry_run.sqlite". (--dry_run_db detected)')
         else:
             logger.info('Dry run is disabled. (--dry_run_db ignored)')
+
+    print('---- loading strategy----', args.strategy)
+    strategy = Strategy() #.load(args.strategy, args.strategy)
+    strategy.load(args.strategy)
+    print('loaded strategy----', strategy.name())
+    STRATEGY=strategy
 
     try:
         init(_CONF)
@@ -359,6 +375,11 @@ def main() -> None:
     finally:
         cleanup()
 
+print('---- about to call main() ----')
+print('name:', __name__)
 
 if __name__ == '__main__':
+    print('---- this is main() ----')
     main()
+
+print('---- end of main file ----')
