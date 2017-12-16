@@ -17,7 +17,7 @@ class linear_comb(TA):
     # above was only boilerplate, below is linear-combination stuff
 
     def run_ind(self, df):
-        input = self.input
+        inputnames = self.input
         #print('--- func in run_ind:', self)
         strat = self._strategy
         # collect the indicators appointed to by the input, these
@@ -25,11 +25,25 @@ class linear_comb(TA):
         # loop over the rows (where each row is a timeframe of indicators)
         # take the dot product between the row and our weights
         # store the product as output for this timeframe
-        self.log.info('---------- running linear_comb under strategy %s -------------' % strat.name())
-        self.log.info('input: %s', input)
-        midprice = (df['high'] + df['low']) / 2
+        
+        # Note, the weights as for now, comes from a mythical place
 
-        return self.series(df, midprice)
+        self.log.info('---------- running linear_comb under strategy %s -------------' % strat.name())
+        self.log.info('input: %s', inputnames)
+        input = np.column_stack([df[x].tolist() for x in inputnames])
+       
+        self.log.info(input)
+        
+        # HERE IS THE ACTION 2017-12-16 17:00 CET
+        
+        # input is now a matrix where row is time, and column is feature
+        # todo: take this input, and for each row:
+        #   take dotproduct of row and weights (just element-multiply and sum)
+        #   and put the result in df['lin][row-number]
+
+        output = (df['high'] + df['low']) / 2 # this is just a placeholder for now
+
+        return self.series(df, output)
 
     def _init_weights(len):
         self.weights = np.random.randn(len) * 0.01
