@@ -23,8 +23,13 @@ class Strategy():
                               '20':  0.02,
                               '0':  0.04
                             }
-        self._stoploss = -0.10
+        self._stoploss = -0.10    # exit if we go below buy price by this ratio
+        self._stoploss_glide = -0.05 # exit if we go this ratio below gliding stop
+        self._stoploss_glide_ema = 0.01  # how fast we update the gliding stoploss,
+                                         # a ratio that picks this amount from
+                                         # current pricerate
         #### Dont edit from these
+        self._stoploss_glide_rate = None
         self._hyper_params = None
         
     def load(self, filename):
@@ -40,11 +45,6 @@ class Strategy():
 
     def name(self):
         return 'default'
-
-    def stoploss(trade, current_rate, current_time, time_diff, current_profit):
-        if(current_profit < _stoploss):
-            return True
-        return False
 
     # what indicators do we use
     def select_indicators(self, some_filter):
@@ -90,8 +90,41 @@ class Strategy():
         return self._minimal_roi
 
     def stoploss(self, trade, current_rate, current_time, time_diff, current_profit):
+
+        #
+        # check for simple stoploss
+        #
+
         if(current_profit < self._stoploss):
             return True
+
+        #
+        # check for gliding stoploss
+        #
+        if time_diff < 1: # not sure if this can happen
+            time_diff = 1 # but we must iterate one frame for gliding stoploss
+            #raise TimeIsZero # FIX: better to raise an error if we are zero
+
+        # set current stoploss pricerate at current rate, if not set
+        if self._stoploss_glide_rate == None:
+            self._stoploss_glide_rate = current_rate
+
+        # exponential update the gliding stoploss
+                 # self._stoploss_glide      # the ratio that we exit at
+        sl_rate  = self._stoploss_glide_rate # price rate the gliding stoploss is at
+        sl_glide = self._stoploss_glide_ema  # ratio of how fast we move the gliding stoploss
+        rate = current_rate
+        if trade.stat_max_rate > rate:
+            rate = trade.stat_max_rate
+        # let gliding stoploss slowly converge to the maximal seen rate
+        for i in range(0, int(time_diff)):  # for every timeframe
+            sl_glide = (1 - sl_glide) * sl_rate + sl_glide * current_rate
+        self._stoploss_glide_rate = sl_glide
+
+        # check if the gliding stoploss has hit
+        if (current_rate / sl_glide - 1) < self._stoploss_glide:
+            return True
+
         return False
 
     def tick_interval(self):

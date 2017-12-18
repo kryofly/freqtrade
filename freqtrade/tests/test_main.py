@@ -107,7 +107,6 @@ def test_process_trade_handling(default_conf, ticker, limit_buy_order, health, m
     assert result is True
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     assert len(trades) == 1
-
     result = _process(strategy)
     assert result is False
 

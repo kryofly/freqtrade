@@ -60,6 +60,9 @@ def handle_trade(strategy: Strategy, trade) -> bool:
     logger.debug('Handling %s ...', trade)
     current_rate = exchange.get_ticker(trade.pair)['bid']
 
+    # Update statistic values for stoplosses, etc
+    trade.update_stats(current_rate)
+
     # Check if minimal roi has been reached
     if not min_roi_reached(strategy, trade, current_rate, datetime.utcnow()):
         return False

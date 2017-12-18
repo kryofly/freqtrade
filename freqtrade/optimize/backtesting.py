@@ -152,6 +152,7 @@ def backtest(config: Dict,
                 amount = strategy.stake_amount(),
                 fee=exchange.get_fee() * 2
             )
+            trade.update_stats(row.close)
             print('*** BUY %s date=%s, close=%s, amount=%s, fee=%s' %
                   (pair, row.date, row.close, trade.amount, trade.fee))
 
