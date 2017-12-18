@@ -124,6 +124,8 @@ def backtest(config: Dict,
     :param realistic: do we try to simulate realistic trades? (default: True)
     :return: DataFrame
     """
+    print('############################################################')
+    print('---- BEGIN BACKTESTING ----')
     trades = []
     trade_count_lock = {}
     exchange._API = Bittrex({'key': '', 'secret': ''})
@@ -150,6 +152,8 @@ def backtest(config: Dict,
                 amount = strategy.stake_amount(),
                 fee=exchange.get_fee() * 2
             )
+            print('*** BUY %s date=%s, close=%s, amount=%s, fee=%s' %
+                  (pair, row.date, row.close, trade.amount, trade.fee))
 
             # calculate win/lose forwards from buy point
             for row2 in ticker[row.Index + 1:].itertuples(index=True):
@@ -160,10 +164,19 @@ def backtest(config: Dict,
                 if min_roi_reached(strategy, trade, row2.close, row2.date) or row2.sell == 1:
                     current_profit = calc_profit(trade, row2.close)
                     lock_pair_until = row2.Index
+                    print('*** SELL %s, date=%s min_roi_reached, close=%s profit=%s, duration=%s frames'
+                          %(pair, row2.date, row2.close, current_profit, row2.Index - row.Index))
 
                     trades.append((pair, current_profit, row2.Index - row.Index))
                     break
+    print('---- trades: ----')
+    print('1 frame consist of %d minutes' % strategy.tick_interval())
+    print('columns: SYMBOL, profit(%, or BTC?), trade duration in frames')
+    for tr in trades:
+      print('trade:', tr)
+    print('-----------------')
     labels = ['currency', 'profit', 'duration']
+    print('### END BACKTESTING #########################################################')
     return DataFrame.from_records(trades, columns=labels)
 
 

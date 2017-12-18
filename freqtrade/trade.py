@@ -30,6 +30,8 @@ def min_roi_reached(strategy: Strategy, trade, current_rate: float, current_time
     """
     current_profit = calc_profit(trade, current_rate)
     if current_profit < strategy.stoploss():
+        print('--- stoploss hit: profit=%s < stoploss=%s'
+              %(current_profit, strategy.stoploss()))
         logger.debug('Stop loss hit.')
         return True
 
@@ -37,6 +39,8 @@ def min_roi_reached(strategy: Strategy, trade, current_rate: float, current_time
     time_diff = (current_time - trade.open_date).total_seconds() / 60
     for duration, threshold in sorted(strategy.minimal_roi().items()):
         if time_diff > float(duration) and current_profit > threshold:
+            print('current_profit=%s > min_roi_treshold=%s AND %s frames is > limit=%s'
+                  %(current_profit, threshold, time_diff, duration))
             return True
 
     logger.debug('Threshold not reached. (cur_profit: %1.2f%%)', current_profit * 100.0)
