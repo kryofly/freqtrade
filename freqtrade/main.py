@@ -300,6 +300,10 @@ def main() -> None:
     print('---- loading strategy----', args.strategy)
     strategy = Strategy().load(args.strategy)
     print('loaded strategy----', strategy.name())
+    
+    if not args.rekt:
+        print('NOT going LIVE!\nThis is an untested friendly code-fork (for educational purposes only).\nLive-trading is disabled by default, to protect you from accidentially losing money.\nIF you know what you are doing add the "--rekt=yes" flag to go live.\n\nIF you want to live-trade you probably want to use the original code at: https://github.com/gcarq/freqtrade\n');
+        sys.exit();
 
     try:
         init(_CONF)

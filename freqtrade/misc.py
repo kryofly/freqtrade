@@ -110,6 +110,13 @@ def parse_args(args: List[str]):
         description='Simple High Frequency Trading Bot for crypto currencies'
     )
     parser.add_argument(
+        '--rekt',
+        help='run LIVE, (potentially lose all your money)',
+        dest='rekt',
+        default=False,
+        type=bool,
+    )
+    parser.add_argument(
         '-c', '--config',
         help='specify configuration file (default: config.json)',
         dest='config',
