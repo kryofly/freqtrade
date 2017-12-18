@@ -41,6 +41,11 @@ class Strategy():
     def name(self):
         return 'default'
 
+    def stoploss(trade, current_rate, current_time, time_diff, current_profit):
+        if(current_profit < _stoploss):
+            return True
+        return False
+
     # what indicators do we use
     def select_indicators(self, some_filter):
         self.log.info('selecting all indicators (default)')
@@ -84,8 +89,10 @@ class Strategy():
     def minimal_roi(self):
         return self._minimal_roi
 
-    def stoploss(self):
-        return self._stoploss
+    def stoploss(self, trade, current_rate, current_time, time_diff, current_profit):
+        if(current_profit < self._stoploss):
+            return True
+        return False
 
     def tick_interval(self):
         return self._tick_interval

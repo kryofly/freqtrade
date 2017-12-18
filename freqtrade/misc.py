@@ -246,7 +246,6 @@ CONF_SCHEMA = {
             },
             'minProperties': 1
         },
-        'stoploss': {'type': 'number', 'maximum': 0, 'exclusiveMaximum': True},
         'bid_strategy': {
             'type': 'object',
             'properties': {

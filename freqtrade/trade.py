@@ -30,16 +30,16 @@ def min_roi_reached(strategy: Strategy, trade,
     Based an earlier trade and current price and ROI configuration, decides whether bot should sell
     :return True if bot should sell at current rate
     """
+    # get how old the trade is in unit of frames
+    time_diff = ((current_time - trade.open_date).total_seconds() / 60) / strategy.tick_interval()
     current_profit = calc_profit(trade, current_rate)
-    if current_profit < strategy.stoploss():
-        print('--- stoploss hit: profit=%s < stoploss=%s'
-              %(current_profit, strategy.stoploss()))
+    if strategy.stoploss(trade, current_rate, current_time, time_diff, current_profit):
+        print('--- stoploss hit: profit=%s, rate=%s, time=%s (%s frames)'
+              %(current_profit, current_rate, current_time, time_diff))
         logger.debug('Stop loss hit.')
         return True
 
     # Check if time matches and current rate is above threshold
-    time_diff = (current_time - trade.open_date).total_seconds() / 60 # unit=minutes
-    time_diff = time_diff / strategy.tick_interval()                  # unit=frames
     for duration, threshold in sorted(strategy.minimal_roi().items()):
         if time_diff > float(duration) and current_profit > threshold:
             print('current_profit=%s > min_roi_treshold=%s AND %s frames is > limit=%s'
