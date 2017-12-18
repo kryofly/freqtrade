@@ -9,11 +9,12 @@ from sqlalchemy import create_engine
 from freqtrade import DependencyException, OperationalException
 from freqtrade.analyze import SignalType
 from freqtrade.exchange import Exchanges
-from freqtrade.main import create_trade, handle_trade, init, \
+from freqtrade.main import create_trade, init, \
     get_target_bid, _process
 from freqtrade.misc import get_state, State
 from freqtrade.persistence import Trade
 from freqtrade.strategy import Strategy
+from freqtrade.trade import handle_trade
 
 def setup_strategy():
     return Strategy()
@@ -188,41 +189,6 @@ def test_create_trade_no_pairs(default_conf, ticker, mocker):
         mocker.patch.dict('freqtrade.main._CONF', conf)
         create_trade(strategy, default_conf['stake_amount'])
 
-
-def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
-    strategy = setup_strategy()
-    mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    mocker.patch('freqtrade.main.get_signal', side_effect=lambda *args: True)
-    mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
-    mocker.patch.multiple('freqtrade.main.exchange',
-                          validate_pairs=MagicMock(),
-                          get_ticker=MagicMock(return_value={
-                              'bid': 0.17256061,
-                              'ask': 0.172661,
-                              'last': 0.17256061
-                          }),
-                          buy=MagicMock(return_value='mocked_limit_buy'),
-                          sell=MagicMock(return_value='mocked_limit_sell'))
-    init(default_conf, create_engine('sqlite://'))
-    create_trade(strategy, 15.0)
-
-    trade = Trade.query.first()
-    assert trade
-
-    trade.update(limit_buy_order)
-    assert trade.is_open is True
-
-    handle_trade(strategy, trade)
-    assert trade.open_order_id == 'mocked_limit_sell'
-
-    # Simulate fulfilled LIMIT_SELL order for trade
-    trade.update(limit_sell_order)
-
-    assert trade.close_rate == 0.0802134
-    assert trade.close_profit == 0.10046755
-    assert trade.close_date is not None
-
-
 def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mocker):
     strategy = setup_strategy()
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
@@ -246,7 +212,6 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mo
 
     with pytest.raises(ValueError, match=r'.*closed trade.*'):
         handle_trade(strategy, trade)
-
 
 def test_balance_fully_ask_side(mocker):
     mocker.patch.dict('freqtrade.main._CONF', {'bid_strategy': {'ask_last_balance': 0.0}})
