@@ -23,8 +23,6 @@ logger = logging.getLogger('freqtrade')
 
 _CONF = {}
 
-STRATEGY = None
-
 print('---- this is main.py ----')
 
 def refresh_whitelist(strategy: Strategy, whitelist: Optional[List[str]] = None) -> None:
@@ -53,7 +51,7 @@ def refresh_whitelist(strategy: Strategy, whitelist: Optional[List[str]] = None)
         _CONF['exchange']['pair_whitelist'] = sanitized_whitelist
 
 
-def _process(dynamic_whitelist: Optional[int] = 0) -> bool:
+def _process(strategy, dynamic_whitelist: Optional[int] = 0) -> bool:
     """
     Queries the persistence layer for open trades and handles them,
     otherwise a new trade is created.
@@ -63,15 +61,15 @@ def _process(dynamic_whitelist: Optional[int] = 0) -> bool:
     state_changed = False
     try:
         # Refresh whitelist based on wallet maintenance
-        refresh_whitelist(STRATEGY,
-            gen_pair_whitelist(STRATEGY.stake_currency(), topn = dynamic_whitelist) if dynamic_whitelist else None
+        refresh_whitelist(strategy,
+            gen_pair_whitelist(strategy.stake_currency(), topn = dynamic_whitelist) if dynamic_whitelist else None
         )
         # Query trades from persistence layer
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
         if len(trades) < _CONF['max_open_trades']:
             try:
                 # Create entity and execute trade
-                state_changed = create_trade(float(_CONF['stake_amount']))
+                state_changed = create_trade(strategy, float(_CONF['stake_amount']))
                 if not state_changed:
                     logger.info(
                         'Checked all whitelisted currencies. '
@@ -89,7 +87,7 @@ def _process(dynamic_whitelist: Optional[int] = 0) -> bool:
 
             if trade.is_open and trade.open_order_id is None:
                 # Check if we can sell our current pair
-                state_changed = handle_trade(trade) or state_changed
+                state_changed = handle_trade(strategy, trade) or state_changed
 
             Trade.session.flush()
     except (requests.exceptions.RequestException, json.JSONDecodeError) as error:
@@ -149,7 +147,7 @@ def min_roi_reached(strategy: Strategy, trade: Trade, current_rate: float, curre
     return False
 
 
-def handle_trade(trade: Trade) -> bool:
+def handle_trade(strategy: Strategy, trade: Trade) -> bool:
     """
     Sells the current pair if the threshold is reached and updates the trade record.
     :return: True if trade has been sold, False otherwise
@@ -161,13 +159,13 @@ def handle_trade(trade: Trade) -> bool:
     current_rate = exchange.get_ticker(trade.pair)['bid']
 
     # Check if minimal roi has been reached
-    if not min_roi_reached(STRATEGY, trade, current_rate, datetime.utcnow()):
+    if not min_roi_reached(strategy, trade, current_rate, datetime.utcnow()):
         return False
 
     # Check if sell signal has been enabled and triggered
     if _CONF.get('experimental', {}).get('use_sell_signal'):
         logger.debug('Checking sell_signal ...')
-        if not get_signal(trade.strategy, trade.pair, SignalType.SELL):
+        if not get_signal(strategy, trade.pair, SignalType.SELL):
             return False
 
     execute_sell(trade, current_rate)
@@ -182,7 +180,7 @@ def get_target_bid(ticker: Dict[str, float]) -> float:
     return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
 
 
-def create_trade(stake_amount: float) -> bool:
+def create_trade(strategy: Strategy, stake_amount: float) -> bool:
     """
     Checks the implemented trading indicator(s) for a randomly picked pair,
     if one pair triggers the buy_signal a new trade record gets created
@@ -210,7 +208,7 @@ def create_trade(stake_amount: float) -> bool:
 
     # Pick pair based on StochRSI buy signals
     for _pair in whitelist:
-        if get_signal(STRATEGY,_pair, SignalType.BUY):
+        if get_signal(strategy,_pair, SignalType.BUY):
             pair = _pair
             break
     else:
@@ -238,7 +236,8 @@ def create_trade(stake_amount: float) -> bool:
         open_date=datetime.utcnow(),
         exchange=exchange.get_name().upper(),
         open_order_id=order_id,
-        strategy=STRATEGY # A nice workaround, each trade could have a different Strategy 
+        # cant support this since strategy isn't persistent
+        #strategy=strategy # A nice workaround, each trade could have a different Strategy 
     )
     Trade.session.add(trade)
     Trade.session.flush()
@@ -305,7 +304,6 @@ def main() -> None:
     Loads and validates the config and handles the main loop
     :return: None
     """
-    global STRATEGY
 
     print('---- this is main() ----')
     global _CONF
@@ -346,7 +344,6 @@ def main() -> None:
     print('---- loading strategy----', args.strategy)
     strategy = Strategy().load(args.strategy)
     print('loaded strategy----', strategy.name())
-    STRATEGY=strategy
 
     try:
         init(_CONF)
@@ -364,6 +361,7 @@ def main() -> None:
                 throttle(
                     _process,
                     min_secs=_CONF['internals'].get('process_throttle_secs', 10),
+                    strategy=strategy,
                     dynamic_whitelist=args.dynamic_whitelist,
                 )
             old_state = new_state

@@ -39,11 +39,11 @@ class LinCombStrategy(Strategy):
             print('---- using hyper params instead')
             return self.use_hyper_params (dataframe)
         else:
-            dataframe.loc[crossed_above(dataframe['lin'], -3), 'buy'] = 1
+            dataframe.loc[crossed_above(dataframe['lin'], 0.3), 'buy'] = 1
             return dataframe
 
     def populate_sell_trend(self, dataframe: DataFrame) -> DataFrame:
-        dataframe.loc[crossed_below(dataframe['lin'], -3), 'sell'] = 1
+        dataframe.loc[crossed_below(dataframe['lin'], 0.7), 'sell'] = 1
         return dataframe
 
     # hyper optimize (learn parameters)

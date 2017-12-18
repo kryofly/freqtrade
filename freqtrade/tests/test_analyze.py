@@ -6,8 +6,9 @@ import arrow
 import pytest
 from pandas import DataFrame
 
-from freqtrade.analyze import parse_ticker_dataframe, populate_buy_trend, populate_indicators, \
-    get_signal, SignalType, populate_sell_trend
+from freqtrade.analyze import parse_ticker_dataframe, populate_indicators, \
+    get_signal, SignalType
+from freqtrade.strategy import Strategy
 
 
 @pytest.fixture
@@ -25,41 +26,45 @@ def test_dataframe_correct_length(result):
     assert len(result.index) == 14395
 
 
-def test_populates_buy_trend(result):
-    dataframe = populate_buy_trend(populate_indicators(result))
-    assert 'buy' in dataframe.columns
+# Following two functions belong to the strategy
+# and should be moved to a test_strategy.py file
 
+#def test_populates_buy_trend(result):
+#    dataframe = populate_buy_trend(populate_indicators(result))
+#    assert 'buy' in dataframe.columns
 
-def test_populates_sell_trend(result):
-    dataframe = populate_sell_trend(populate_indicators(result))
-    assert 'sell' in dataframe.columns
+#def test_populates_sell_trend(result):
+#    dataframe = populate_sell_trend(populate_indicators(result))
+#    assert 'sell' in dataframe.columns
 
 
 def test_returns_latest_buy_signal(mocker):
+    strategy = Strategy()
     mocker.patch('freqtrade.analyze.get_ticker_history', return_value=MagicMock())
     mocker.patch(
         'freqtrade.analyze.analyze_ticker',
         return_value=DataFrame([{'buy': 1, 'date': arrow.utcnow()}])
     )
-    assert get_signal('BTC-ETH', SignalType.BUY)
+    assert get_signal(strategy,'BTC-ETH', SignalType.BUY)
 
     mocker.patch(
         'freqtrade.analyze.analyze_ticker',
         return_value=DataFrame([{'buy': 0, 'date': arrow.utcnow()}])
     )
-    assert not get_signal('BTC-ETH', SignalType.BUY)
+    assert not get_signal(strategy, 'BTC-ETH', SignalType.BUY)
 
 
 def test_returns_latest_sell_signal(mocker):
+    strategy = Strategy()
     mocker.patch('freqtrade.analyze.get_ticker_history', return_value=MagicMock())
     mocker.patch(
         'freqtrade.analyze.analyze_ticker',
         return_value=DataFrame([{'sell': 1, 'date': arrow.utcnow()}])
     )
-    assert get_signal('BTC-ETH', SignalType.SELL)
+    assert get_signal(strategy, 'BTC-ETH', SignalType.SELL)
 
     mocker.patch(
         'freqtrade.analyze.analyze_ticker',
         return_value=DataFrame([{'sell': 0, 'date': arrow.utcnow()}])
     )
-    assert not get_signal('BTC-ETH', SignalType.SELL)
+    assert not get_signal(strategy, 'BTC-ETH', SignalType.SELL)
