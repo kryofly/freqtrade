@@ -12,7 +12,7 @@ from tabulate import tabulate
 
 from freqtrade import exchange
 from freqtrade.exchange import Bittrex
-from freqtrade.main import min_roi_reached
+from freqtrade.trade import min_roi_reached
 from freqtrade.misc import load_config, printdf
 from freqtrade.optimize import load_data, preprocess
 from freqtrade.persistence import Trade

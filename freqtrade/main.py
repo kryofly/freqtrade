@@ -17,7 +17,7 @@ from freqtrade.analyze import get_signal, SignalType
 from freqtrade.misc import State, get_state, update_state, parse_args, throttle, \
     load_config
 from freqtrade.persistence import Trade
-from freqtrade.trade import min_roi_reached, handle_trade, calc_profit
+from freqtrade.trade import handle_trade, calc_profit
 from freqtrade.strategy import Strategy
 
 logger = logging.getLogger('freqtrade')

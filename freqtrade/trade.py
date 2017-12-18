@@ -23,7 +23,9 @@ def calc_profit(trade, rate: Optional[float] = None) -> float:
     return float((Decimal(rate or trade.close_rate) - Decimal(trade.open_rate))
                  / Decimal(trade.open_rate) - Decimal(trade.fee))
 
-def min_roi_reached(strategy: Strategy, trade, current_rate: float, current_time: datetime) -> bool:
+def min_roi_reached(strategy: Strategy, trade,
+                    current_rate: float,
+                    current_time: datetime) -> bool:
     """
     Based an earlier trade and current price and ROI configuration, decides whether bot should sell
     :return True if bot should sell at current rate
@@ -36,7 +38,8 @@ def min_roi_reached(strategy: Strategy, trade, current_rate: float, current_time
         return True
 
     # Check if time matches and current rate is above threshold
-    time_diff = (current_time - trade.open_date).total_seconds() / 60
+    time_diff = (current_time - trade.open_date).total_seconds() / 60 # unit=minutes
+    time_diff = time_diff / strategy.tick_interval()                  # unit=frames
     for duration, threshold in sorted(strategy.minimal_roi().items()):
         if time_diff > float(duration) and current_profit > threshold:
             print('current_profit=%s > min_roi_treshold=%s AND %s frames is > limit=%s'
