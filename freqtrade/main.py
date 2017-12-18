@@ -17,7 +17,7 @@ from freqtrade.analyze import get_signal, SignalType
 from freqtrade.misc import State, get_state, update_state, parse_args, throttle, \
     load_config
 from freqtrade.persistence import Trade
-from freqtrade.trade import min_roi_reached, handle_trade
+from freqtrade.trade import min_roi_reached, handle_trade, calc_profit
 from freqtrade.strategy import Strategy
 
 logger = logging.getLogger('freqtrade')
@@ -117,7 +117,7 @@ def execute_sell(trade: Trade, limit: float) -> None:
     order_id = exchange.sell(str(trade.pair), limit, trade.amount)
     trade.open_order_id = order_id
 
-    fmt_exp_profit = round(trade.calc_profit(limit) * 100, 2)
+    fmt_exp_profit = round(calc_profit(trade, limit) * 100, 2)
     rpc.send_msg('*{}:* Selling [{}]({}) with limit `{:.8f} (profit: ~{:.2f}%)`'.format(
         trade.exchange,
         trade.pair.replace('_', '/'),

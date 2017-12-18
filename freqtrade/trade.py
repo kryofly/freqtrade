@@ -1,20 +1,34 @@
 
+from typing import Optional, Dict
 import logging
 from datetime import datetime
+from decimal import Decimal, getcontext
+
 from freqtrade.strategy import Strategy
-from freqtrade.persistence import Trade
 from freqtrade import exchange
 from freqtrade.analyze import get_signal, SignalType
 from freqtrade import main
+#from freqtrade import persistence
 
 logger = logging.getLogger('freqtrade')
 
-def min_roi_reached(strategy: Strategy, trade: Trade, current_rate: float, current_time: datetime) -> bool:
+def calc_profit(trade, rate: Optional[float] = None) -> float:
+    """
+    Calculates the profit in percentage (including fee).
+    :param rate: rate to compare with (optional).
+    If rate is not set trade.close_rate will be used
+    :return: profit in percentage as float
+    """
+    getcontext().prec = 8
+    return float((Decimal(rate or trade.close_rate) - Decimal(trade.open_rate))
+                 / Decimal(trade.open_rate) - Decimal(trade.fee))
+
+def min_roi_reached(strategy: Strategy, trade, current_rate: float, current_time: datetime) -> bool:
     """
     Based an earlier trade and current price and ROI configuration, decides whether bot should sell
     :return True if bot should sell at current rate
     """
-    current_profit = trade.calc_profit(current_rate)
+    current_profit = calc_profit(trade, current_rate)
     if current_profit < strategy.stoploss():
         logger.debug('Stop loss hit.')
         return True
@@ -28,7 +42,7 @@ def min_roi_reached(strategy: Strategy, trade: Trade, current_rate: float, curre
     logger.debug('Threshold not reached. (cur_profit: %1.2f%%)', current_profit * 100.0)
     return False
 
-def handle_trade(strategy: Strategy, trade: Trade) -> bool:
+def handle_trade(strategy: Strategy, trade) -> bool:
     """
     Sells the current pair if the threshold is reached and updates the trade record.
     :return: True if trade has been sold, False otherwise

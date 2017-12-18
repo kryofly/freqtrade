@@ -11,6 +11,8 @@ from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from freqtrade import trade
+
 logger = logging.getLogger(__name__)
 
 _CONF = {}
@@ -99,7 +101,7 @@ class Trade(_DECL_BASE):
         elif order['type'] == 'LIMIT_SELL':
             # Set close rate and set actual profit
             self.close_rate = order['rate']
-            self.close_profit = self.calc_profit()
+            self.close_profit = trade.calc_profit(self)
             self.close_date = datetime.utcnow()
             self.is_open = False
             logger.info(
@@ -111,14 +113,3 @@ class Trade(_DECL_BASE):
 
         self.open_order_id = None
         Trade.session.flush()
-
-    def calc_profit(self, rate: Optional[float] = None) -> float:
-        """
-        Calculates the profit in percentage (including fee).
-        :param rate: rate to compare with (optional).
-        If rate is not set self.close_rate will be used
-        :return: profit in percentage as float
-        """
-        getcontext().prec = 8
-        return float((Decimal(rate or self.close_rate) - Decimal(self.open_rate))
-                     / Decimal(self.open_rate) - Decimal(self.fee))

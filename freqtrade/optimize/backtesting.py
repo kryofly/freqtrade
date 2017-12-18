@@ -17,6 +17,7 @@ from freqtrade.misc import load_config, printdf
 from freqtrade.optimize import load_data, preprocess
 from freqtrade.persistence import Trade
 from freqtrade.strategy import Strategy
+from freqtrade.trade import calc_profit
 
 logger = logging.getLogger(__name__)
 
@@ -157,7 +158,7 @@ def backtest(config: Dict,
                     trade_count_lock[row2.date] = trade_count_lock.get(row2.date, 0) + 1
 
                 if min_roi_reached(strategy, trade, row2.close, row2.date) or row2.sell == 1:
-                    current_profit = trade.calc_profit(row2.close)
+                    current_profit = calc_profit(trade, row2.close)
                     lock_pair_until = row2.Index
 
                     trades.append((pair, current_profit, row2.Index - row.Index))
