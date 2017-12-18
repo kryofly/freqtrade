@@ -210,7 +210,10 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mo
     assert trade.is_open is False
 
     with pytest.raises(ValueError, match=r'.*closed trade.*'):
-        handle_trade(strategy, trade)
+        state = handle_trade(strategy, trade)
+        if state:
+            current_rate = exchange.get_ticker(trade.pair)['bid']
+            main.execute_sell(trade, current_rate)
 
 def test_balance_fully_ask_side(mocker):
     mocker.patch.dict('freqtrade.main._CONF', {'bid_strategy': {'ask_last_balance': 0.0}})

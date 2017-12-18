@@ -7,8 +7,6 @@ from decimal import Decimal, getcontext
 from freqtrade.strategy import Strategy
 from freqtrade import exchange
 from freqtrade.analyze import get_signal, SignalType
-from freqtrade import main
-#from freqtrade import persistence
 
 logger = logging.getLogger('freqtrade')
 
@@ -49,6 +47,8 @@ def min_roi_reached(strategy: Strategy, trade,
     logger.debug('Threshold not reached. (cur_profit: %1.2f%%)', current_profit * 100.0)
     return False
 
+# Make this a pure function, that only returns True/False,
+# Depending on wheter to exit this trade
 def handle_trade(strategy: Strategy, trade) -> bool:
     """
     Sells the current pair if the threshold is reached and updates the trade record.
@@ -71,5 +71,4 @@ def handle_trade(strategy: Strategy, trade) -> bool:
     #if not get_signal(strategy, trade.pair, SignalType.SELL):
     #    return False
 
-    main.execute_sell(trade, current_rate)
     return True
