@@ -152,14 +152,14 @@ def backtest(config: Dict,
                 amount = strategy.stake_amount(),
                 fee=exchange.get_fee() * 2
             )
-            trade.update_stats(row.close)
-            strategy.step_frame(trade, row.close)
             # FIX: we aren't persistence with at_stoploss_glide_rate, need to call trade.session.flush here to save the updated val
             print('*** BUY %s date=%s, close=%s, amount=%s, fee=%s' %
                   (pair, row.date, row.close, trade.amount, trade.fee))
 
             # calculate win/lose forwards from buy point
             for row2 in ticker[row.Index + 1:].itertuples(index=True):
+                strategy.step_frame(trade, row2.close, row2.date)
+                trade.update_stats(row2.close)
                 if max_open_trades > 0:
                     # Increase trade_count_lock for every iteration
                     trade_count_lock[row2.date] = trade_count_lock.get(row2.date, 0) + 1

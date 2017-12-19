@@ -107,6 +107,7 @@ class Strategy():
         # check for simple stoploss
 
         if(current_profit < self._stoploss):
+            print('stoploss hit due to current_profit=%s < stoploss=%s' % (current_profit, self._stoploss))
             return True
 
         # check for gliding stoploss
@@ -115,11 +116,12 @@ class Strategy():
         if sl_glide_rate:
             # check if the gliding stoploss has hit
             if (current_rate / sl_glide_rate - 1) < self._stoploss_glide:
+                print('stoploss trail hit: rate=%s, glide=%s, stopp=%s' %(current_rate, sl_glide_rate, self._stoploss_glide))
                 return True
 
         return False
 
-    def step_frame(self, trade, current_rate):
+    def step_frame(self, trade, current_rate, date):
         #
         # update gliding stoploss
         #
@@ -128,17 +130,19 @@ class Strategy():
         sl_glide_rate = trade.stat_stoploss_glide_rate
         # set current stoploss pricerate at current rate, if not set
         if not sl_glide_rate:
+            print('%s initializing stoploss_glide_rate to %s' %(date, current_rate))
             sl_glide_rate = trade.stat_stoploss_glide_rate = current_rate
 
         # exponential update the gliding stoploss
         sl_glide = self._stoploss_glide_ema  # ratio of how fast we move the gliding stoploss
         sl_glide_target = current_rate
-        if trade.stat_max_rate > sl_glide_target:
+        if trade.stat_max_rate and trade.stat_max_rate > sl_glide_target:
             sl_glide_target = trade.stat_max_rate
 
         # let gliding stoploss slowly converge to the maximal seen rate
         sl_glide_rate = (1 - sl_glide) * sl_glide_rate + sl_glide * sl_glide_target
         # update the glide_rate in the trade
+        print('%s adjust stoploss trail %.7f -> %.7f towards %.7f (current_rate=%s)' %(date, trade.stat_stoploss_glide_rate, sl_glide_rate, sl_glide_target, current_rate))
         trade.stat_stoploss_glide_rate = sl_glide_rate # this is why we must persistence every frame
 
     def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:

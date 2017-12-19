@@ -136,7 +136,7 @@ class Trade(_DECL_BASE):
             self.stat_max_rate = current_rate
             need_update = True
 
-        # due to self.stat_stoploss_glide_rate
+        # need to always update due to self.stat_stoploss_glide_rate being updated in every frame
         need_update = True
 
         if need_update:
