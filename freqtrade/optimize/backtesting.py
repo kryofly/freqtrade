@@ -153,6 +153,8 @@ def backtest(config: Dict,
                 fee=exchange.get_fee() * 2
             )
             trade.update_stats(row.close)
+            strategy.step_frame(trade, row.close)
+            # FIX: we aren't persistence with at_stoploss_glide_rate, need to call trade.session.flush here to save the updated val
             print('*** BUY %s date=%s, close=%s, amount=%s, fee=%s' %
                   (pair, row.date, row.close, trade.amount, trade.fee))
 

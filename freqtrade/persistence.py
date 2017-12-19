@@ -67,14 +67,17 @@ class Trade(_DECL_BASE):
     fee = Column(Float, nullable=False, default=0.0)
     open_rate = Column(Float)
     close_rate = Column(Float)
-    stat_min_rate = Column(Float)
-    stat_max_rate = Column(Float)
     close_profit = Column(Float)
     stake_amount = Column(Float, nullable=False)
     amount = Column(Float)
     open_date = Column(DateTime, nullable=False, default=datetime.utcnow)
     close_date = Column(DateTime)
     open_order_id = Column(String)
+    # these are specific to strategy, perhaps we can
+    # add persistence object on the fly?
+    stat_min_rate = Column(Float)
+    stat_max_rate = Column(Float)
+    stat_stoploss_glide_rate = Column(Float)
 
     def __repr__(self):
         return 'Trade(id={}, pair={}, amount={:.8f}, open_rate={:.8f}, open_since={})'.format(
@@ -114,7 +117,8 @@ class Trade(_DECL_BASE):
             raise ValueError('Unknown order type: {}'.format(order['type']))
 
         self.open_order_id = None
-        Trade.session.flush()
+        if 'session' in dir(Trade):
+            Trade.session.flush()
 
     def update_stats(self, current_rate: Dict) -> None:
         """
@@ -131,5 +135,10 @@ class Trade(_DECL_BASE):
         if not self.stat_max_rate or current_rate > self.stat_max_rate:
             self.stat_max_rate = current_rate
             need_update = True
+
+        # due to self.stat_stoploss_glide_rate
+        need_update = True
+
         if need_update:
-            Trade.session.flush()
+            if 'session' in dir(Trade):
+                Trade.session.flush()

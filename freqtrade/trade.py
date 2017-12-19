@@ -62,6 +62,9 @@ def handle_trade(strategy: Strategy, trade) -> bool:
 
     # Update statistic values for stoplosses, etc
     trade.update_stats(current_rate)
+    strategy.step_frame(trade, current_rate)
+    # FIX: above, we arent persistence with the update of trade.stat_stoploss_glide_rate
+    # we need to call trade session flush here
 
     # Check if minimal roi has been reached
     if not min_roi_reached(strategy, trade, current_rate, datetime.utcnow()):
