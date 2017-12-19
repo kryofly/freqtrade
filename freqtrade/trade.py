@@ -38,11 +38,11 @@ def min_roi_reached(strategy: Strategy, trade,
         return True
 
     # Check if time matches and current rate is above threshold
-    for duration, threshold in sorted(strategy.minimal_roi().items()):
-        if time_diff > float(duration) and current_profit > threshold:
-            print('current_profit=%s > min_roi_treshold=%s AND %s frames is > limit=%s'
-                  %(current_profit, threshold, time_diff, duration))
-            return True
+    #for duration, threshold in sorted(strategy.minimal_roi().items()):
+    #    if time_diff > float(duration) and current_profit > threshold:
+    #        print('current_profit=%s > min_roi_treshold=%s AND %s frames is > limit=%s'
+    #              %(current_profit, threshold, time_diff, duration))
+    #        return True
 
     logger.debug('Threshold not reached. (cur_profit: %1.2f%%)', current_profit * 100.0)
     return False

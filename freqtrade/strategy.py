@@ -92,7 +92,17 @@ class Strategy():
     def minimal_roi(self):
         return self._minimal_roi
 
+    # exit trade, due to stoploss, duration, ROI reached, etc
     def stoploss(self, trade, current_rate, current_time, time_diff, current_profit):
+
+        # Exit trade du to ROI or duration timeout
+
+        # Check if time matches and current rate is above threshold
+        for duration, threshold in sorted(self.minimal_roi().items()):
+            if time_diff > float(duration) and current_profit > threshold:
+                print('current_profit=%s > min_roi_treshold=%s AND %s frames is > limit=%s'
+                      %(current_profit, threshold, time_diff, duration))
+                return True
 
         # check for simple stoploss
 
