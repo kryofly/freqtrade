@@ -111,7 +111,7 @@ def generate_text_table(data: Dict[str, Dict], results: DataFrame, stake_currenc
     ])
     return tabulate(tabular_data, headers=headers)
 
-def backtest(config: Dict,
+def backtest(config: Dict, # FIX: backtest doesn't use config anymore
              strategy: Strategy,
              processed: Dict[str, DataFrame],
              max_open_trades: int = 0,
@@ -170,6 +170,7 @@ def backtest(config: Dict,
                     print('*** SELL %s, date=%s min_roi_reached, close=%s profit=%s, duration=%s frames'
                           %(pair, row2.date, row2.close, current_profit, row2.Index - row.Index))
 
+                    # FIX: add buy,sell date to the trade-log (row.date, row2.date)
                     trades.append((pair, current_profit, row2.Index - row.Index))
                     break
     print('---- trades: ----')
@@ -178,7 +179,7 @@ def backtest(config: Dict,
     for tr in trades:
       print('trade:', tr)
     print('-----------------')
-    labels = ['currency', 'profit', 'duration']
+    labels = ['currency', 'profit', 'duration'] # FIX: add buy,sell dates here too
     print('### END BACKTESTING #########################################################')
     return DataFrame.from_records(trades, columns=labels)
 
@@ -229,14 +230,14 @@ def start(args):
 
     max_open_trades = 0
     if args.realistic_simulation:
-        max_open_trades = config['max_open_trades']
+        max_open_trades = config['max_open_trades'] # FIX: remove from config
     else:
         max_open_trades = strategy.max_open_trades()
     logger.info('Using max_open_trades: %s ...', max_open_trades)
 
     # Monkey patch config
     from freqtrade import main
-    main._CONF = config
+    main._CONF = config # FIX: remove this
 
     # Execute backtest and print results
     prepdata = preprocess(strategy, data)

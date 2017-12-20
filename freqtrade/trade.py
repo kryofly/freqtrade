@@ -62,7 +62,7 @@ def handle_trade(strategy: Strategy, trade) -> bool:
 
     # Update statistic values for stoplosses, etc
     trade.update_stats(current_rate)
-    strategy.step_frame(trade, current_rate)
+    strategy.step_frame(trade, current_rate, '')
     # FIX: above, we arent persistence with the update of trade.stat_stoploss_glide_rate
     # we need to call trade session flush here
 

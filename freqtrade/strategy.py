@@ -14,6 +14,7 @@ class Strategy():
         
     def default_config(self):
         #### Edit these
+        self._backtest_pairs = ['BTC_ETH'] # what pairs to use for backtesting
         self._stake_currency = 'BTC', # base currency
         self._stake_amount = 0.01 # each trades maximum worth
         self._max_open_trades = 3 # concurrently ongoing trades
@@ -75,7 +76,10 @@ class Strategy():
 
     # what currency pairs do we use for backtesting
     def backtest_pairs(self):
-       return ['BTC_ETH'] 
+       return self._backtest_pairs
+
+    def set_backtest_pairs(self, pairs):
+       self._backtest_pairs = pairs
 
     def tick_interval(self):
         return self._tick_interval
@@ -116,7 +120,7 @@ class Strategy():
         if sl_glide_rate:
             # check if the gliding stoploss has hit
             if (current_rate / sl_glide_rate - 1) < self._stoploss_glide:
-                print('stoploss trail hit: rate=%s, glide=%s, stopp=%s' %(current_rate, sl_glide_rate, self._stoploss_glide))
+                print('stoploss trail hit: rate=%s, glide=%s, stop=%s' %(current_rate, sl_glide_rate, self._stoploss_glide))
                 return True
 
         return False
@@ -142,7 +146,7 @@ class Strategy():
         # let gliding stoploss slowly converge to the maximal seen rate
         sl_glide_rate = (1 - sl_glide) * sl_glide_rate + sl_glide * sl_glide_target
         # update the glide_rate in the trade
-        print('%s adjust stoploss trail %.7f -> %.7f towards %.7f (current_rate=%s)' %(date, trade.stat_stoploss_glide_rate, sl_glide_rate, sl_glide_target, current_rate))
+        #print('%s adjust stoploss trail %.7f -> %.7f towards %.7f (current_rate=%s)' %(date, trade.stat_stoploss_glide_rate, sl_glide_rate, sl_glide_target, current_rate))
         trade.stat_stoploss_glide_rate = sl_glide_rate # this is why we must persistence every frame
 
     def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:

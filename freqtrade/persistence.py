@@ -126,7 +126,7 @@ class Trade(_DECL_BASE):
         :param current_rate: current rate retrieved by exchange.get_ticker()
         :return: None
         """
-        logger.info('Updating statistics for trade (id=%s) ...', self.id)
+        #logger.info('Updating statistics for trade (id=%s) ...', self.id)
         need_update = False
 
         if not self.stat_min_rate or current_rate < self.stat_min_rate:
