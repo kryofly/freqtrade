@@ -15,6 +15,7 @@ from freqtrade.vendor.qtpylib.indicators import crossed_above, crossed_below
 from freqtrade.dataframe import load_dataframe
 from freqtrade.strategy import Strategy
 from freqtrade.ta.awesome_oscillator import awesome_oscillator
+from freqtrade.ta.heikinashi         import heikinashi
 from freqtrade.ta.linear_comb import linear_comb
 
 logger = logging.getLogger(__name__)
@@ -72,6 +73,7 @@ def prepare_indicators(strategy: Strategy, inds: list, dataframe: DataFrame) -> 
             'plus_di':    lambda _: ta.PLUS_DI(dataframe),
             'minus_dm':   lambda _: ta.MINUS_DM(dataframe),
             'minus_di':   lambda _: ta.MINUS_DI(dataframe),
+            'heikinashi':  lambda args: heikinashi(strategy,args).run(dataframe),
             'ao':  lambda args: awesome_oscillator(strategy,args).run(dataframe),
             'lin': lambda args: linear_comb(strategy,args).run(dataframe)
             }

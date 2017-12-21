@@ -70,7 +70,7 @@ def _process(strategy, dynamic_whitelist: Optional[int] = 0) -> bool:
         if len(trades) < _CONF['max_open_trades']: # FIX: move into strategy
             try:
                 # Create entity and execute trade
-                state_changed = create_trade(strategy, float(_CONF['stake_amount'])) # FIX: move into strategy
+                state_changed = create_trade(strategy, strategy.stake_amount())
                 if not state_changed:
                     logger.info(
                         'Checked all whitelisted currencies. '

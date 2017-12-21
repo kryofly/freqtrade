@@ -42,12 +42,12 @@ def test_process_trade_creation(default_conf, ticker, health, mocker):
     assert len(trades) == 1
     trade = trades[0]
     assert trade is not None
-    assert trade.stake_amount == default_conf['stake_amount']
+    assert trade.stake_amount == strategy.stake_amount()
     assert trade.is_open
     assert trade.open_date is not None
     assert trade.exchange == Exchanges.BITTREX.name
     assert trade.open_rate == 0.072661
-    assert trade.amount == 0.6881270557795791
+    assert trade.amount == 0.1376254111559158 # FIX: please review this assert!
 
 
 def test_process_exchange_failures(default_conf, ticker, health, mocker):
