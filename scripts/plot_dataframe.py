@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+import sys
+import argparse
+from typing import List
+
 import matplotlib  # Install PYQT5 manually if you want to test this helper function
 matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
@@ -7,18 +11,26 @@ import matplotlib.pyplot as plt
 from freqtrade import exchange, analyze
 from freqtrade.dataframe import load_dataframe
 from freqtrade.strategy import Strategy
+from freqtrade.misc import parse_args_common
 
+# we could reuse misc.py:parse_args() if split up and composable
+def plot_parse_args(args: List[str]):
+    parser = parse_args_common(args, 'Graph utility')
+    parser.add_argument(
+        '-p', '--pair',
+        help = 'What currency pair',
+        dest = 'pair',
+        default = 'BTC_XLM',
+        type = str,
+    )
+    return parser.parse_args(args)
 
-def plot_analyzed_dataframe(pair: str) -> None:
+def plot_analyzed_dataframe(strategy: Strategy, pair: str) -> None:
     """
     Calls analyze() and plots the returned dataframe
     :param pair: pair as str
     :return: None
     """
-    strategy = Strategy()
-
-    # Init Bittrex to use public API
-    exchange._API = exchange.Bittrex({'key': '', 'secret': ''})
 
     ld = load_dataframe(ticker_interval=5, pairs=pair)
     d = ld[pair[0]];
@@ -56,5 +68,8 @@ def plot_analyzed_dataframe(pair: str) -> None:
 
 
 if __name__ == '__main__':
-    plot_analyzed_dataframe(['BTC_XLM'])
+    args = plot_parse_args(sys.argv[1:])
+    print('---- Plotting currency pair:', args.pair)
+    strategy = Strategy().load(args.strategy)
+    plot_analyzed_dataframe(strategy, [args.pair])
 

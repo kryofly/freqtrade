@@ -99,30 +99,9 @@ def throttle(func: Callable[..., Any], min_secs: float, *args, **kwargs) -> Any:
     time.sleep(duration)
     return result
 
-
-def parse_args(args: List[str]):
-    """
-    Parses given arguments and returns an argparse Namespace instance.
-    Returns None if a sub command has been selected and executed.
-    """
-    print('-------- parsing args ----------')
+def parse_args_common(args: List[str], descr: str):
     parser = argparse.ArgumentParser(
-        description='Simple High Frequency Trading Bot for crypto currencies'
-    )
-    parser.add_argument(
-        '--rekt',
-        help='run LIVE, (potentially lose all your money)',
-        dest='rekt',
-        default=False,
-        type=bool,
-    )
-    parser.add_argument(
-        '-c', '--config',
-        help='specify configuration file (default: config.json)',
-        dest='config',
-        default='config.json',
-        type=str,
-        metavar='PATH',
+        description=descr
     )
     parser.add_argument(
         '-v', '--verbose',
@@ -136,6 +115,39 @@ def parse_args(args: List[str]):
         '--version',
         action='version',
         version='%(prog)s {}'.format(__version__),
+    )
+    parser.add_argument(
+        '-c', '--config',
+        help='specify configuration file (default: config.json)',
+        dest='config',
+        default='config.json',
+        type=str,
+        metavar='PATH',
+    )
+    parser.add_argument(
+        '-s', '--strategy',
+        help='specify trading strategy file (default: freqtrade/strategy.py)',
+        dest='strategy',
+        type=str,
+        metavar='PATH',
+    )
+    return parser
+
+def parse_args(args: List[str], description = None):
+    """
+    Parses given arguments and returns an argparse Namespace instance.
+    Returns None if a sub command has been selected and executed.
+    """
+    print('-------- parsing args ----------')
+    if description == None:
+        description = 'Simple High Frequency Trading Bot for crypto currencies'
+    parser = parse_args_common(args, description)
+    parser.add_argument(
+        '--rekt',
+        help='run LIVE, (potentially lose all your money)',
+        dest='rekt',
+        default=False,
+        type=bool,
     )
     parser.add_argument(
         '--dynamic-whitelist',
@@ -152,13 +164,6 @@ def parse_args(args: List[str]):
              enabled.',
         action='store_true',
         dest='dry_run_db',
-    )
-    parser.add_argument(
-        '-s', '--strategy',
-        help='specify trading strategy file (default: freqtrade/strategy.py)',
-        dest='strategy',
-        type=str,
-        metavar='PATH',
     )
     print('-------- parsing args, build subcommand ----------')
     build_subcommands(parser)
