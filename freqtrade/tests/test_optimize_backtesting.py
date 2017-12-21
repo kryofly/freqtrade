@@ -3,8 +3,10 @@
 import pytest
 import math
 
+from unittest.mock import MagicMock
+
 from freqtrade import optimize
-from freqtrade.optimize.backtesting import backtest
+from freqtrade.optimize.backtesting import backtest, backtest_export_json, get_timeframe, generate_text_table
 from freqtrade.strategy import Strategy
 
 def setup_strategy():
@@ -74,6 +76,17 @@ def load_data_test(what):
             i += 1
     return data
 
+def simple_backtest(config, strategy, contour, num_results):
+    data = load_data_test(contour)
+    processed = optimize.preprocess(strategy, data)
+    assert isinstance(processed, dict)
+    results = backtest(strategy, processed, 1, True)
+    # results :: <class 'pandas.core.frame.DataFrame'>
+    if num_results == 0:
+        assert len(results) == 0
+    else:
+        assert num_results(results)
+
 # Test backtest on offline data
 # loaded by freqdata/optimize/__init__.py::load_data()
 
@@ -105,19 +118,37 @@ def test_processed(default_conf):
     data = load_data_test('raise')
     processed = optimize.preprocess(strategy, data)
 
-def simple_backtest(config, strategy, contour, num_results):
-    data = load_data_test(contour)
-    processed = optimize.preprocess(strategy, data)
-    assert isinstance(processed, dict)
-    results = backtest(strategy, processed, 1, True)
-    # results :: <class 'pandas.core.frame.DataFrame'>
-    if num_results == 0:
-        assert len(results) == 0
-    else:
-        assert num_results(results)
-
 def test_raise(default_conf):
     strategy = setup_strategy()
     tests = [['raise', 0], ['lower', 0], ['sine', lambda x: len(x) > 0]]
     for [contour, numres] in tests:
         simple_backtest(default_conf, strategy, contour, numres)
+
+def test_backtest_export(default_conf):
+    strategy = setup_strategy()
+    data = load_data_test('sine')
+    prepdata = optimize.preprocess(strategy, data)
+    assert isinstance(prepdata, dict)
+    results = backtest(strategy, prepdata, 1, True)
+    args = MagicMock()
+    args.ticker_interval = strategy.tick_interval()
+    args.export_json = 'tmp_testdata_bt.json'
+    backtest_export_json(args, default_conf, prepdata, results)
+
+def test_backtest_get_timeframe(default_conf):
+    strategy = setup_strategy()
+    data = load_data_test('sine')
+    prepdata = optimize.preprocess(strategy, data)
+    tup = get_timeframe(data)
+    assert isinstance(tup, tuple)
+    min_date, max_date = tup
+    assert isinstance(min_date.isoformat(), str)
+    assert isinstance(max_date.isoformat(), str)
+
+def test_backtest_generate_text_table(default_conf):
+    strategy = setup_strategy()
+    data = load_data_test('sine')
+    prepdata = optimize.preprocess(strategy, data)
+    results = backtest(strategy, prepdata, 1, True)
+    txt = generate_text_table(data, results, strategy.stake_currency(), strategy.tick_interval())
+    assert isinstance(txt, str)
