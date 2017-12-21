@@ -27,15 +27,10 @@ logger = logging.getLogger(__name__)
 
 
 # use --target_trades=x to suit your number concurrent trades so its realistic to 20days of data
-_CURRENT_TRIES = 0
 
 TOTAL_PROFIT_TO_BEAT = 3
 AVG_PROFIT_TO_BEAT = 0.2
 AVG_DURATION_TO_BEAT = 50
-
-# Configuration and data used by hyperopt
-PROCESSED = None
-STRATEGY = None
 
 # Monkey patch config
 from freqtrade import main
@@ -58,12 +53,12 @@ def log_results(results):
         sys.stdout.flush()
 
 def optimizer(params, args):
-    global _CURRENT_TRIES
+    strategy = args['strategy']
 
     from freqtrade.optimize import backtesting
-    STRATEGY.set_hyper_params(params)
+    strategy.set_hyper_params(params)
 
-    results = backtest(STRATEGY, PROCESSED)
+    results = backtest(strategy, args['processed'])
 
     result = format_results(results)
 
@@ -75,7 +70,7 @@ def optimizer(params, args):
     trade_loss = 1 - 0.35 * exp(-(trade_count - target_trades) ** 2 / 10 ** 5.2)
     profit_loss = max(0, 1 - total_profit / 10000)  # max profit 10000
 
-    _CURRENT_TRIES += 1
+    args['current_tries'] += 1
 
     result_data = {
         'trade_count': trade_count,
@@ -84,7 +79,7 @@ def optimizer(params, args):
         'profit_loss': profit_loss,
         'avg_profit': results.profit.mean() * 100.0,
         'avg_duration': results.duration.mean() * 5,
-        'current_tries': _CURRENT_TRIES,
+        'current_tries': args['current_tries'],
         'total_tries': args['epochs'], #TOTAL_TRIES,
         'result': result,
         'results': results
@@ -110,13 +105,6 @@ def format_results(results: DataFrame):
             )
 
 def start(args):
-    #global TOTAL_TRIES
-    global PROCESSED
-    global STRATEGY
-
-    #TOTAL_TRIES = args.epochs
-
-    exchange._API = Bittrex({'key': '', 'secret': ''})
 
     # Initialize logger
     logging.basicConfig(
@@ -136,16 +124,20 @@ def start(args):
     logger.info('loading strategy, file: %s' % args.strategy)
     strategy = Strategy().load(args.strategy)
     logger.info('loaded strategy %s' % strategy.name())
-    STRATEGY = strategy
 
     # load raw tick data from disk
     dfs = optimize.load_data(strategy.tick_interval(),
                              strategy.backtest_pairs())
     # preprocess it by adding INDicators/OSCillators and
     # also BUY/SELL trigger-vectors
-    PROCESSED = optimize.preprocess(strategy, dfs)
+    prepdata = optimize.preprocess(strategy, dfs)
 
-    optargs = {'epochs': args.epochs, 'target_trades': args.target_trades}
+    optargs = {'epochs': args.epochs,
+               'target_trades': args.target_trades,
+               'current_tries': 0,
+               'strategy': strategy,
+               'processed': prepdata
+              }
     fun = lambda params: optimizer(params, optargs)
 
     best = fmin(fn=fun, space=strategy.buy_strategy_space(), algo=tpe.suggest, max_evals=args.epochs, trials=trials)
