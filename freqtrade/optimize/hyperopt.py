@@ -26,9 +26,7 @@ logging.getLogger('hyperopt.tpe').setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 
-# set TARGET_TRADES to suit your number concurrent trades so its realistic to 20days of data
-TARGET_TRADES = 1100
-TOTAL_TRIES = None
+# use --target_trades=x to suit your number concurrent trades so its realistic to 20days of data
 _CURRENT_TRIES = 0
 
 TOTAL_PROFIT_TO_BEAT = 3
@@ -59,13 +57,13 @@ def log_results(results):
         print('.', end='')
         sys.stdout.flush()
 
-def optimizer(params):
+def optimizer(params, args):
     global _CURRENT_TRIES
 
     from freqtrade.optimize import backtesting
     STRATEGY.set_hyper_params(params)
 
-    results = backtest({}, STRATEGY, PROCESSED)
+    results = backtest(STRATEGY, PROCESSED)
 
     result = format_results(results)
 
@@ -73,8 +71,8 @@ def optimizer(params):
     if math.isnan(total_profit):
         total_profit = 0
     trade_count = len(results.index)
-
-    trade_loss = 1 - 0.35 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.2)
+    target_trades = args['target_trades']
+    trade_loss = 1 - 0.35 * exp(-(trade_count - target_trades) ** 2 / 10 ** 5.2)
     profit_loss = max(0, 1 - total_profit / 10000)  # max profit 10000
 
     _CURRENT_TRIES += 1
@@ -87,7 +85,7 @@ def optimizer(params):
         'avg_profit': results.profit.mean() * 100.0,
         'avg_duration': results.duration.mean() * 5,
         'current_tries': _CURRENT_TRIES,
-        'total_tries': TOTAL_TRIES,
+        'total_tries': args['epochs'], #TOTAL_TRIES,
         'result': result,
         'results': results
         }
@@ -112,11 +110,11 @@ def format_results(results: DataFrame):
             )
 
 def start(args):
-    global TOTAL_TRIES
+    #global TOTAL_TRIES
     global PROCESSED
     global STRATEGY
 
-    TOTAL_TRIES = args.epochs
+    #TOTAL_TRIES = args.epochs
 
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
@@ -147,7 +145,10 @@ def start(args):
     # also BUY/SELL trigger-vectors
     PROCESSED = optimize.preprocess(strategy, dfs)
 
-    best = fmin(fn=optimizer, space=strategy.buy_strategy_space(), algo=tpe.suggest, max_evals=TOTAL_TRIES, trials=trials)
+    optargs = {'epochs': args.epochs, 'target_trades': args.target_trades}
+    fun = lambda params: optimizer(params, optargs)
+
+    best = fmin(fn=fun, space=strategy.buy_strategy_space(), algo=tpe.suggest, max_evals=args.epochs, trials=trials)
     logger.info('Best parameters:\n%s', json.dumps(best, indent=4))
     results = sorted(trials.results, key=itemgetter('loss'))
     logger.info('Best Result:\n%s', results[0]['result'])

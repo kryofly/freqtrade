@@ -82,7 +82,7 @@ def test_backtest(default_conf):
 
     data = optimize.load_data(ticker_interval=5, pairs=['BTC_ETH'])
     print('Strategy: ', strategy)
-    results = backtest(default_conf, strategy, optimize.preprocess(strategy, data), 10, True)
+    results = backtest(strategy, optimize.preprocess(strategy, data), 10, True)
     num_resutls = len(results)
     assert num_resutls > 0
 
@@ -92,45 +92,32 @@ def test_1min_ticker_interval(default_conf):
 
     # Run a backtesting for an exiting 5min ticker_interval
     data = optimize.load_data(ticker_interval=1, pairs=['BTC_UNITEST'])
-    results = backtest(default_conf, strategy, optimize.preprocess(strategy, data), 1, True)
+    results = backtest(strategy, optimize.preprocess(strategy, data), 1, True)
     assert len(results) > 0
 
     # Run a backtesting for 5min ticker_interval
     with pytest.raises(FileNotFoundError):
         data = optimize.load_data(ticker_interval=5, pairs=['BTC_UNITEST'])
-        results = backtest(default_conf, strategy, optimize.preprocess(strategy, data), 1, True)
-
+        results = backtest(strategy, optimize.preprocess(strategy, data), 1, True)
 
 def test_processed(default_conf):
     strategy = setup_strategy()
     data = load_data_test('raise')
     processed = optimize.preprocess(strategy, data)
-    print('processed data:', processed)
-    print('processed data type:', type(processed))
-    print('processed data  len:', len(processed))
+
+def simple_backtest(config, strategy, contour, num_results):
+    data = load_data_test(contour)
+    processed = optimize.preprocess(strategy, data)
+    assert isinstance(processed, dict)
+    results = backtest(strategy, processed, 1, True)
+    # results :: <class 'pandas.core.frame.DataFrame'>
+    if num_results == 0:
+        assert len(results) == 0
+    else:
+        assert num_results(results)
 
 def test_raise(default_conf):
     strategy = setup_strategy()
-    data = load_data_test('raise')
-    processed = optimize.preprocess(strategy, data)
-    assert isinstance(processed, dict)
-    results = backtest(default_conf, strategy, processed, 1, True)
-    assert len(results) == 0
-
-def test_lower(default_conf):
-    strategy = setup_strategy()
-    data = load_data_test('lower')
-    processed = optimize.preprocess(strategy, data)
-    assert isinstance(processed, dict)
-    results = backtest(default_conf, strategy, processed, 1, True)
-    assert len(results) == 0
-
-def test_sine(default_conf):
-    strategy = setup_strategy()
-    data = load_data_test('sine')
-    processed = optimize.preprocess(strategy, data)
-    assert isinstance(processed, dict)
-    results = backtest(default_conf, strategy, processed, 1, True)
-    print('Backtesting type:', type(results))
-    print('Backtesting results:', results)
-    assert len(results) > 0
+    tests = [['raise', 0], ['lower', 0], ['sine', lambda x: len(x) > 0]]
+    for [contour, numres] in tests:
+        simple_backtest(default_conf, strategy, contour, numres)

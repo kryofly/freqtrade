@@ -111,8 +111,7 @@ def generate_text_table(data: Dict[str, Dict], results: DataFrame, stake_currenc
     ])
     return tabulate(tabular_data, headers=headers)
 
-def backtest(config: Dict, # FIX: backtest doesn't use config anymore
-             strategy: Strategy,
+def backtest(strategy: Strategy,
              processed: Dict[str, DataFrame],
              max_open_trades: int = 0,
              realistic: bool = True) -> DataFrame:
@@ -171,7 +170,7 @@ def backtest(config: Dict, # FIX: backtest doesn't use config anymore
                           %(pair, row2.date, row2.close, current_profit, row2.Index - row.Index))
 
                     # FIX: add buy,sell date to the trade-log (row.date, row2.date)
-                    trades.append((pair, current_profit, row2.Index - row.Index))
+                    trades.append((pair, row.date, row2.date, current_profit, row2.Index - row.Index))
                     break
     print('---- trades: ----')
     print('1 frame consist of %d minutes' % strategy.tick_interval())
@@ -179,7 +178,7 @@ def backtest(config: Dict, # FIX: backtest doesn't use config anymore
     for tr in trades:
       print('trade:', tr)
     print('-----------------')
-    labels = ['currency', 'profit', 'duration'] # FIX: add buy,sell dates here too
+    labels = ['currency', 'date_b', 'date_s', 'profit', 'duration'] # FIX: add buy,sell dates here too
     print('### END BACKTESTING #########################################################')
     return DataFrame.from_records(trades, columns=labels)
 
@@ -241,7 +240,7 @@ def start(args):
 
     # Execute backtest and print results
     prepdata = preprocess(strategy, data)
-    results = backtest(config, strategy,
+    results = backtest(strategy,
                        prepdata, max_open_trades,
                        args.realistic_simulation)
     printdf(prepdata)

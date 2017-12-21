@@ -67,10 +67,10 @@ def _process(strategy, dynamic_whitelist: Optional[int] = 0) -> bool:
         )
         # Query trades from persistence layer
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-        if len(trades) < _CONF['max_open_trades']:
+        if len(trades) < _CONF['max_open_trades']: # FIX: move into strategy
             try:
                 # Create entity and execute trade
-                state_changed = create_trade(strategy, float(_CONF['stake_amount']))
+                state_changed = create_trade(strategy, float(_CONF['stake_amount'])) # FIX: move into strategy
                 if not state_changed:
                     logger.info(
                         'Checked all whitelisted currencies. '
@@ -135,7 +135,7 @@ def get_target_bid(ticker: Dict[str, float]) -> float:
     """ Calculates bid target between current ask price and last price """
     if ticker['ask'] < ticker['last']:
         return ticker['ask']
-    balance = _CONF['bid_strategy']['ask_last_balance']
+    balance = _CONF['bid_strategy']['ask_last_balance'] # FIX: move into strategy
     return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
 
 

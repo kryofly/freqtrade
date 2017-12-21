@@ -225,6 +225,14 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         metavar='INT',
     )
     hyperopt_cmd.add_argument(
+        '-tt', '--target_trades',
+        help='specify number of trades (default: 1100)',
+        dest='target_trades',
+        default=1100,
+        type=int,
+        metavar='INT',
+    )
+    hyperopt_cmd.add_argument(
         '--use-mongodb',
         help='parallelize evaluations with mongodb (requires mongod in PATH)',
         dest='mongodb',
@@ -239,13 +247,6 @@ CONF_SCHEMA = {
         'stake_currency': {'type': 'string', 'enum': ['BTC', 'ETH', 'USDT']},
         'stake_amount': {'type': 'number', 'minimum': 0},
         'dry_run': {'type': 'boolean'},
-        'minimal_roi': {
-            'type': 'object',
-            'patternProperties': {
-                '^[0-9.]+$': {'type': 'number'}
-            },
-            'minProperties': 1
-        },
         'bid_strategy': {
             'type': 'object',
             'properties': {
@@ -309,7 +310,6 @@ CONF_SCHEMA = {
         'stake_currency',
         'stake_amount',
         'dry_run',
-        'minimal_roi',
         'bid_strategy',
         'telegram'
     ]
