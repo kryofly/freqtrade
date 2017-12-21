@@ -212,7 +212,7 @@ def start(args):
             data[pair] = exchange.get_ticker_history(pair, args.ticker_interval)
     else:
         logger.info('Using local backtesting data, pairs: %s' % pairs)
-        data = load_data(args.ticker_interval, pairs)
+        data = load_data(args.datadir, args.ticker_interval, pairs)
 
     amount = config['stake_amount']
     if amount == 0:

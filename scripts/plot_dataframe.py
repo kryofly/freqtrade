@@ -44,12 +44,12 @@ def plot_analyzed_dataframe(args, strategy: Strategy, pairs: str) -> None:
 
     if args.backtest:
         print('---- calling backtest ----')
-        data = optimize.load_data(ticker_interval=strategy.tick_interval(), pairs=pairs)
+        data = optimize.load_data(args.datadir, ticker_interval=strategy.tick_interval(), pairs=pairs)
         prepdata = optimize.preprocess(strategy, data)
         backtest_results = backtest(strategy, prepdata, 1, True)
         print('---- backtesting done ----')
 
-    ld = load_dataframe(ticker_interval=5, pairs=pairs)
+    ld = load_dataframe(args.datadir, ticker_interval=5, pairs=pairs)
     d = ld[pairs[0]];
     dataframe = analyze.analyze_ticker(strategy,d)
 

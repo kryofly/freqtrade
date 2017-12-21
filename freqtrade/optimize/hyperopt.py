@@ -126,7 +126,8 @@ def start(args):
     logger.info('loaded strategy %s' % strategy.name())
 
     # load raw tick data from disk
-    dfs = optimize.load_data(strategy.tick_interval(),
+    dfs = optimize.load_data(args.datadir,
+                             strategy.tick_interval(),
                              strategy.backtest_pairs())
     # preprocess it by adding INDicators/OSCillators and
     # also BUY/SELL trigger-vectors

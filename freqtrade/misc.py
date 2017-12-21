@@ -131,6 +131,14 @@ def parse_args_common(args: List[str], descr: str):
         type=str,
         metavar='PATH',
     )
+    parser.add_argument(
+        '-dd', '--datadir',
+        help='path to backtest data (default freqdata/tests/testdata',
+        dest='datadir',
+        default='freqtrade/tests/testdata',
+        type=str,
+        metavar='PATH',
+    )
     return parser
 
 def parse_args(args: List[str], description = None):

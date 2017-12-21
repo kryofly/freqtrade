@@ -19,21 +19,22 @@ from pandas import DataFrame, to_datetime
 
 logger = logging.getLogger(__name__)
 
-def load_dataframe(ticker_interval: int = 5, pairs: [List[str]] = None) -> Dict[str, List]:
+def load_dataframe(datadir, ticker_interval: int = 5, pairs: [List[str]] = None) -> Dict[str, List]:
     """
     Loads ticker history data for the given parameters
     :param ticker_interval: ticker interval in minutes
     :param pairs: list of pairs
     :return: dict
     """
-    path = os.path.abspath(os.path.dirname(__file__))
+    path = os.path.abspath('.') # os.path.dirname(__file__))
     result = {}
     if pairs == None:
         raise 'load_dataframe no pairs'
     for pair in pairs:
         print('pair:', pair)
-        with open('{abspath}/tests/testdata/{pair}-{ticker_interval}.json'.format(
+        with open('{abspath}/{datadir}/{pair}-{ticker_interval}.json'.format(
           abspath=path,
+          datadir=datadir,
           pair=pair,
           ticker_interval=ticker_interval,
           )) as tickerdata:

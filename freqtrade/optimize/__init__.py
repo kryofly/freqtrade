@@ -9,19 +9,20 @@ from pandas import DataFrame
 from freqtrade.analyze import populate_indicators, parse_ticker_dataframe
 from freqtrade.strategy import Strategy
 
-def load_data(ticker_interval: int = 5, pairs: Optional[List[str]] = None) -> Dict[str, List]:
+def load_data(datadir: str, ticker_interval: int = 5, pairs: Optional[List[str]] = None) -> Dict[str, List]:
     """
     Loads ticker history data for the given parameters
     :param ticker_interval: ticker interval in minutes
     :param pairs: list of pairs
     :return: dict
     """
-    path = os.path.abspath(os.path.dirname(__file__))
+    path = os.path.abspath(".") #os.path.dirname(__file__))
     result = {}
     for pair in pairs:
         print('loading pair', pair)
-        with open('{abspath}/../tests/testdata/{pair}-{ticker_interval}.json'.format(
+        with open('{abspath}/{datadir}/{pair}-{ticker_interval}.json'.format(
             abspath=path,
+            datadir=datadir,
             pair=pair,
             ticker_interval=ticker_interval,
         )) as tickerdata:

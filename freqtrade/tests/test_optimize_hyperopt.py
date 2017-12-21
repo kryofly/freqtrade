@@ -38,11 +38,12 @@ def test_optimizer_start():
     args.mongodb = False
     args.strategy = None
     args.target_trades = 10
+    args.datadir = 'freqtrade/tests/testdata'
     start(args)
 
 def test_optimizer():
     strategy = setup_strategy()
-    dfs = optimize.load_data(1, strategy.backtest_pairs())
+    dfs = optimize.load_data('freqtrade/tests/testdata', 1, strategy.backtest_pairs())
     prepdata = optimize.preprocess(strategy, dfs)
     optargs = {'epochs': 1,
                'target_trades': 10,

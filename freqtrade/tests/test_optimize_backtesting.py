@@ -15,7 +15,7 @@ def setup_strategy():
     return s
 
 def load_data_test(what):
-    data = optimize.load_data(ticker_interval=1, pairs=['BTC_UNITEST'])
+    data = optimize.load_data('freqtrade/tests/testdata', ticker_interval=1, pairs=['BTC_UNITEST'])
     pair = data['BTC_UNITEST']
     # Depending on the what parameter we now adjust the
     # loaded data:
@@ -93,7 +93,7 @@ def simple_backtest(config, strategy, contour, num_results):
 def test_backtest(default_conf):
     strategy = setup_strategy()
 
-    data = optimize.load_data(ticker_interval=5, pairs=['BTC_ETH'])
+    data = optimize.load_data('freqtrade/tests/testdata', ticker_interval=5, pairs=['BTC_ETH'])
     print('Strategy: ', strategy)
     results = backtest(strategy, optimize.preprocess(strategy, data), 10, True)
     num_resutls = len(results)
@@ -104,13 +104,13 @@ def test_1min_ticker_interval(default_conf):
     strategy = setup_strategy()
 
     # Run a backtesting for an exiting 5min ticker_interval
-    data = optimize.load_data(ticker_interval=1, pairs=['BTC_UNITEST'])
+    data = optimize.load_data('freqtrade/tests/testdata', ticker_interval=1, pairs=['BTC_UNITEST'])
     results = backtest(strategy, optimize.preprocess(strategy, data), 1, True)
     assert len(results) > 0
 
     # Run a backtesting for 5min ticker_interval
     with pytest.raises(FileNotFoundError):
-        data = optimize.load_data(ticker_interval=5, pairs=['BTC_UNITEST'])
+        data = optimize.load_data('freqtrade/tests/testdata', ticker_interval=5, pairs=['BTC_UNITEST'])
         results = backtest(strategy, optimize.preprocess(strategy, data), 1, True)
 
 def test_processed(default_conf):

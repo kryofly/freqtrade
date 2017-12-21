@@ -13,7 +13,7 @@ _pairs = ['BTC_ETH']
 
 def _load_dataframe_pair(pairs):
     strategy = Strategy()
-    ld = load_dataframe(ticker_interval=5, pairs=pairs)
+    ld = load_dataframe('freqtrade/tests/testdata', ticker_interval=5, pairs=pairs)
     dataframe = ld[pairs[0]]
     dataframe = analyze.analyze_ticker(strategy,dataframe)
     return dataframe
