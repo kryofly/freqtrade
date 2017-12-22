@@ -105,12 +105,13 @@ def _process(strategy, dynamic_whitelist: Optional[int] = 0) -> bool:
 
             if trade.is_open and trade.open_order_id is None:
                 # Check if we can sell our current pair
-                state_changed = handle_trade(strategy, trade) or state_changed
-                if state_changed:
+                trade_state = handle_trade(strategy, trade)
+                if trade_state:
                     current_rate = exchange.get_ticker(trade.pair)['bid']
                     msg = execute_sell(trade, current_rate)
                     Trade.session.flush()
                     event_log(EVENT_RPC, 'execute_sell', msg)
+                state_changed = trade_state or state_changed
 
             Trade.session.flush()
     except (requests.exceptions.RequestException, json.JSONDecodeError) as error:
