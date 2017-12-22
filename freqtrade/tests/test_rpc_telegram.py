@@ -170,6 +170,7 @@ def test_profit_handle(default_conf, update, ticker, limit_buy_order, limit_sell
                           get_ticker=ticker)
     init(default_conf, create_engine('sqlite://'))
 
+
     _profit(bot=MagicMock(), update=update)
     assert msg_mock.call_count == 1
     assert 'no closed trade' in msg_mock.call_args_list[0][0][0]
@@ -213,6 +214,8 @@ def test_forcesell_handle(default_conf, update, ticker, mocker):
                           get_ticker=ticker)
     init(default_conf, create_engine('sqlite://'))
 
+    from freqtrade.main import _event_log
+
     # Create some test data
     create_trade(strategy, 15.0)
 
@@ -240,6 +243,8 @@ def test_forcesell_all_handle(default_conf, update, ticker, mocker):
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
     init(default_conf, create_engine('sqlite://'))
+
+    from freqtrade.main import _event_log
 
     # Create some test data
     for _ in range(4):

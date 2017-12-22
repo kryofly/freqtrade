@@ -24,7 +24,24 @@ logger = logging.getLogger('freqtrade')
 
 _CONF = {}
 
+EVENT_RPC = 1 # Send this event to RPC destinations (Telegram, etc..)
+
+# this is supposed to turn off event logging, but it isn't
+# accessable outside main.py (global doesnt work ?)
+# either way it should be put into a 'env' object that we
+# carry around.
+_event_log = True # if True, send out and print events
+
 print('---- this is main.py ----')
+
+def event_log(dst, what, msg):
+    if _event_log:
+        logger.info('%s, %s' %(what, msg))
+        if (dst & EVENT_RPC) != 0:
+            rpc.send_msg(msg)
+    else:
+        logger.info('####### not logging %s,  %s ######' %(what, msg))
+
 
 def refresh_whitelist(strategy: Strategy, whitelist: Optional[List[str]] = None) -> None:
     """
@@ -91,7 +108,9 @@ def _process(strategy, dynamic_whitelist: Optional[int] = 0) -> bool:
                 state_changed = handle_trade(strategy, trade) or state_changed
                 if state_changed:
                     current_rate = exchange.get_ticker(trade.pair)['bid']
-                    execute_sell(trade, current_rate)
+                    msg = execute_sell(trade, current_rate)
+                    Trade.session.flush()
+                    event_log(EVENT_RPC, 'execute_sell', msg)
 
             Trade.session.flush()
     except (requests.exceptions.RequestException, json.JSONDecodeError) as error:
@@ -118,18 +137,16 @@ def execute_sell(trade: Trade, limit: float) -> None:
     """
     # Execute sell and update trade record
     order_id = exchange.sell(str(trade.pair), limit, trade.amount)
+    # FIX: What if sell failed? TEST this, and also return None
     trade.open_order_id = order_id
-
     fmt_exp_profit = round(calc_profit(trade, limit) * 100, 2)
-    rpc.send_msg('*{}:* Selling [{}]({}) with limit `{:.8f} (profit: ~{:.2f}%)`'.format(
-        trade.exchange,
-        trade.pair.replace('_', '/'),
-        exchange.get_pair_detail_url(trade.pair),
-        limit,
-        fmt_exp_profit
-    ))
-    Trade.session.flush()
-
+    msg = '*{}:* Selling [{}]({}) with limit `{:.8f} (profit: ~{:.2f}%)`'.format(
+          trade.exchange,
+          trade.pair.replace('_', '/'),
+          exchange.get_pair_detail_url(trade.pair),
+          limit,
+          fmt_exp_profit)
+    return msg
 
 def get_target_bid(ticker: Dict[str, float]) -> float:
     """ Calculates bid target between current ask price and last price """
@@ -263,6 +280,8 @@ def main() -> None:
     Loads and validates the config and handles the main loop
     :return: None
     """
+
+    _event_log = True
 
     print('---- this is main() ----')
     global _CONF

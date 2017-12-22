@@ -382,8 +382,11 @@ def _forcesell(bot: Bot, update: Update) -> None:
         for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
             # Get current rate
             current_rate = exchange.get_ticker(trade.pair)['bid']
-            from freqtrade.main import execute_sell
-            execute_sell(trade, current_rate)
+            from freqtrade.main import execute_sell, event_log, EVENT_RPC
+            msg = execute_sell(trade, current_rate)
+            Trade.session.flush()
+            event_log(EVENT_RPC, 'execute_sell', msg)
+
         return
 
     # Query for trade
@@ -397,8 +400,10 @@ def _forcesell(bot: Bot, update: Update) -> None:
         return
     # Get current rate
     current_rate = exchange.get_ticker(trade.pair)['bid']
-    from freqtrade.main import execute_sell
-    execute_sell(trade, current_rate)
+    from freqtrade.main import execute_sell, event_log, EVENT_RPC
+    msg = execute_sell(trade, current_rate)
+    Trade.session.flush()
+    event_log(EVENT_RPC, 'execute_sell', msg)
 
 
 @authorized_only
