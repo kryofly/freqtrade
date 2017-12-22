@@ -17,10 +17,10 @@ class HeikinAshiStrategy(Strategy):
 
         # adjust, so we dont let stoploss interfere so much
 
-        self._minimal_roi = { '5000':  0.0,  # put silly amount to really ride the profits
-                              '4000':  0.01,
-                              '2000':  0.02,
-                              '1000':  0.04
+        self._minimal_roi = { '5000':  0.2,  # put silly amount to really ride the profits
+                              '4000':  0.3,
+                              '2000':  0.4,
+                              '1000':  0.5   # a 50% profit so quick is bound to be reversed, so take it
                             }
         self._stoploss = -0.20    # absolutly exit if we go below buy price by this ratio
         self._stoploss_glide = -0.10 # larger room for movement if we go below the stoploss-floor
@@ -65,28 +65,28 @@ class HeikinAshiStrategy(Strategy):
             # Notice, normal open,close,high,low has been
             # replaced with the Heikin-Ashi version
                           # current stick is green/bull/hollow
-            dataframe.loc[(dataframe['open'] < dataframe['close'])
+            dataframe.loc[(dataframe['ha_open'] < dataframe['ha_close'])
                           # and two previous was also green
-                          & (dataframe['open'].shift(1) < dataframe['close'].shift(1))
-                          & (dataframe['open'].shift(2) < dataframe['close'].shift(2))
+                          & (dataframe['ha_open'].shift(1) < dataframe['ha_close'].shift(1))
+                          & (dataframe['ha_open'].shift(2) < dataframe['ha_close'].shift(2))
                           # check oldest green comes before a red
-                          & (dataframe['open'].shift(2) < dataframe['close'].shift(3))
+                          & (dataframe['ha_open'].shift(2) < dataframe['ha_close'].shift(3))
                           # three consecutive days of red sticks
-                          & (dataframe['open'].shift(3) > dataframe['close'].shift(3))
-                          & (dataframe['open'].shift(4) > dataframe['close'].shift(4))
-                          & (dataframe['open'].shift(5) > dataframe['close'].shift(5))
+                          & (dataframe['ha_open'].shift(3) > dataframe['ha_close'].shift(3))
+                          & (dataframe['ha_open'].shift(4) > dataframe['ha_close'].shift(4))
+                          & (dataframe['ha_open'].shift(5) > dataframe['ha_close'].shift(5))
                           ,'buy'] = 1
             return dataframe
 
     def populate_sell_trend(self, dataframe: DataFrame) -> DataFrame:
                       # current stick is red/bear/filled
-        dataframe.loc[(dataframe['open'] > dataframe['close'])
+        dataframe.loc[(dataframe['ha_open'] > dataframe['ha_close'])
                       # and previous two sticks was also red
-                      & (dataframe['open'].shift(1) > dataframe['close'].shift(1))
-                      & (dataframe['open'].shift(2) > dataframe['close'].shift(2))
+                      & (dataframe['ha_open'].shift(1) > dataframe['ha_close'].shift(1))
+                      & (dataframe['ha_open'].shift(2) > dataframe['ha_close'].shift(2))
                       # perhaps check for three consecutive days of lower relative closes
-                      & (dataframe['close']          < dataframe['close'].shift(1))
-                      & (dataframe['close'].shift(1) < dataframe['close'].shift(2))
+                      & (dataframe['ha_close']          < dataframe['ha_close'].shift(1))
+                      & (dataframe['ha_close'].shift(1) < dataframe['ha_close'].shift(2))
                       ,'sell'] = 1
         return dataframe
 

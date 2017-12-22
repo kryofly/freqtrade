@@ -164,10 +164,13 @@ def backtest(strategy: Strategy,
                     trade_count_lock[row2.date] = trade_count_lock.get(row2.date, 0) + 1
 
                 if min_roi_reached(strategy, trade, row2.close, row2.date) or row2.sell == 1:
+                    reason = 'min_roi_reached'
+                    if row2.sell == 1:
+                        reason = 'sell signal'
                     current_profit = calc_profit(trade, row2.close)
                     lock_pair_until = row2.Index
-                    print('*** SELL %s, date=%s min_roi_reached, close=%s profit=%s, duration=%s frames'
-                          %(pair, row2.date, row2.close, current_profit, row2.Index - row.Index))
+                    print('*** SELL %s, date=%s [%s], close=%s profit=%s, duration=%s frames'
+                          %(pair, row2.date, reason, row2.close, current_profit, row2.Index - row.Index))
 
                     # FIX: add buy,sell date to the trade-log (row.date, row2.date)
                     trades.append((pair, row.date, row2.date, current_profit, row2.Index - row.Index))

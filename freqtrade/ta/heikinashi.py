@@ -10,17 +10,15 @@ class heikinashi(TA):
     def set_params(self, stategy, args):
         return None
 
-    def run_ind(self, bars):
-        bars = bars.copy() # this look expensive
-        bars['ha_close'] = (bars['open'] + bars['high'] +
-                            bars['low'] + bars['close']) / 4
-        bars['ha_open'] = (bars['open'].shift(1) + bars['close'].shift(1)) / 2
-        bars.loc[:1, 'ha_open'] = bars['open'].values[0]
-        bars.loc[1:, 'ha_open'] = (
-            (bars['ha_open'].shift(1) + bars['ha_close'].shift(1)) / 2)[1:]
-        bars['ha_high'] = bars.loc[:, ['high', 'ha_open', 'ha_close']].max(axis=1)
-        bars['ha_low'] = bars.loc[:, ['low', 'ha_open', 'ha_close']].min(axis=1)
-        return self.series(bars, data={'open':  bars['ha_open'],
-                                       'high':  bars['ha_high'],
-                                       'low':   bars['ha_low'],
-                                       'close': bars['ha_close']})
+    def run_ind(self, obars):
+        obars['ha_close'] = (obars['open'] + obars['high'] +
+                             obars['low']  + obars['close']) / 4
+        obars['ha_open']  = (obars['open'].shift(1) + obars['ha_close'].shift(1)) / 2
+        obars.loc[:1, 'ha_open'] = obars['open'].values[0]
+        obars.loc[1:, 'ha_open'] = (
+            (obars['ha_open'].shift(1) + obars['ha_close'].shift(1)) / 2)[1:]
+
+        obars['ha_high'] = obars.loc[:, ['high', 'ha_open', 'ha_close']].max(axis=1)
+        obars['ha_low']  = obars.loc[:, ['low' , 'ha_open', 'ha_close']].min(axis=1)
+
+        return self.series(obars, data=obars['ha_open'])
