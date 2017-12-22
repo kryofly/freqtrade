@@ -122,5 +122,5 @@ def get_signal(strategy: Strategy, pair: str, signal: SignalType) -> bool:
         return False
 
     result = latest[signal.value] == 1
-    logger.debug('%s_trigger: %s (pair=%s, signal=%s)', signal.value, latest['date'], pair, result)
+    logger.info('%s_trigger: %s (pair=%s, signal=%s)', signal.value, latest['date'], pair, result)
     return result

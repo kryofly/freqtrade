@@ -98,20 +98,21 @@ class Strategy():
 
     # exit trade, due to stoploss, duration, ROI reached, etc
     def stoploss(self, trade, current_rate, current_time, time_diff, current_profit):
+        self.log.info('strategy checking stoploss for trade')
 
         # Exit trade du to ROI or duration timeout
 
         # Check if time matches and current rate is above threshold
         for duration, threshold in sorted(self.minimal_roi().items()):
             if time_diff > float(duration) and current_profit > threshold:
-                print('current_profit=%s > min_roi_treshold=%s AND %s frames is > limit=%s'
+                self.log.info('current_profit=%s > min_roi_treshold=%s AND %s frames is > limit=%s'
                       %(current_profit, threshold, time_diff, duration))
                 return True
 
         # check for simple stoploss
 
         if(current_profit < self._stoploss):
-            print('stoploss hit due to current_profit=%s < stoploss=%s' % (current_profit, self._stoploss))
+            self.log.info('stoploss hit due to current_profit=%s < stoploss=%s' % (current_profit, self._stoploss))
             return True
 
         # check for gliding stoploss
@@ -120,7 +121,7 @@ class Strategy():
         if sl_glide_rate:
             # check if the gliding stoploss has hit
             if (current_rate / sl_glide_rate - 1) < self._stoploss_glide:
-                print('stoploss trail hit: rate=%s, glide=%s, stop=%s' %(current_rate, sl_glide_rate, self._stoploss_glide))
+                self.log.info('stoploss trail hit: rate=%s, glide=%s, stop=%s' %(current_rate, sl_glide_rate, self._stoploss_glide))
                 return True
 
         return False
@@ -134,7 +135,7 @@ class Strategy():
         sl_glide_rate = trade.stat_stoploss_glide_rate
         # set current stoploss pricerate at current rate, if not set
         if not sl_glide_rate:
-            print('%s initializing stoploss_glide_rate to %s' %(date, current_rate))
+            self.log.info('%s initializing stoploss_glide_rate to %s' %(date, current_rate))
             sl_glide_rate = trade.stat_stoploss_glide_rate = current_rate
 
         # exponential update the gliding stoploss
@@ -146,7 +147,7 @@ class Strategy():
         # let gliding stoploss slowly converge to the maximal seen rate
         sl_glide_rate = (1 - sl_glide) * sl_glide_rate + sl_glide * sl_glide_target
         # update the glide_rate in the trade
-        #print('%s adjust stoploss trail %.7f -> %.7f towards %.7f (current_rate=%s)' %(date, trade.stat_stoploss_glide_rate, sl_glide_rate, sl_glide_target, current_rate))
+        self.log.info('%s adjust stoploss trail %.7f -> %.7f towards %.7f (current_rate=%s)' %(date, trade.stat_stoploss_glide_rate, sl_glide_rate, sl_glide_target, current_rate))
         trade.stat_stoploss_glide_rate = sl_glide_rate # this is why we must persistence every frame
 
     def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:

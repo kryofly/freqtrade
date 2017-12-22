@@ -106,7 +106,7 @@ def generate_text_table(data: Dict[str, Dict], results: DataFrame, stake_currenc
         'TOTAL',
         len(results.index),
         '{:.2f}%'.format(results.profit.mean() * 100.0),
-        '{:.08f} {}'.format(results.profit.sum(), stake_currency),
+        '{:.08f}'.format(results.profit.sum()),
         '{:.2f}'.format(results.duration.mean() * ticker_interval),
     ])
     return tabulate(tabular_data, headers=headers)
@@ -123,8 +123,8 @@ def backtest(strategy: Strategy,
     :param realistic: do we try to simulate realistic trades? (default: True)
     :return: DataFrame
     """
-    print('############################################################')
-    print('---- BEGIN BACKTESTING ----')
+    logger.info('############################################################')
+    logger.info('---- BEGIN BACKTESTING ----')
     trades = []
     trade_count_lock = {}
     exchange._API = Bittrex({'key': '', 'secret': ''})
@@ -152,7 +152,7 @@ def backtest(strategy: Strategy,
                 fee=exchange.get_fee() * 2
             )
             # FIX: we aren't persistence with at_stoploss_glide_rate, need to call trade.session.flush here to save the updated val
-            print('*** BUY %s date=%s, close=%s, amount=%s, fee=%s' %
+            logger.info('*** BUY %s date=%s, close=%s, amount=%s, fee=%s' %
                   (pair, row.date, row.close, trade.amount, trade.fee))
 
             # calculate win/lose forwards from buy point
@@ -169,20 +169,20 @@ def backtest(strategy: Strategy,
                         reason = 'sell signal'
                     current_profit = calc_profit(trade, row2.close)
                     lock_pair_until = row2.Index
-                    print('*** SELL %s, date=%s [%s], close=%s profit=%s, duration=%s frames'
+                    logger.info('*** SELL %s, date=%s [%s], close=%s profit=%s, duration=%s frames'
                           %(pair, row2.date, reason, row2.close, current_profit, row2.Index - row.Index))
 
                     # FIX: add buy,sell date to the trade-log (row.date, row2.date)
                     trades.append((pair, row.date, row2.date, current_profit, row2.Index - row.Index))
                     break
-    print('---- trades: ----')
-    print('1 frame consist of %d minutes' % strategy.tick_interval())
-    print('columns: SYMBOL, profit(%, or BTC?), trade duration in frames')
+    logger.info('---- trades: ----')
+    logger.info('1 frame consist of %d minutes' % strategy.tick_interval())
+    logger.info('columns: SYMBOL, profit(%, or BTC?), trade duration in frames')
     for tr in trades:
-      print('trade:', tr)
-    print('-----------------')
+      logger.info('trade:', tr)
+    logger.info('-----------------')
     labels = ['currency', 'date_b', 'date_s', 'profit', 'duration'] # FIX: add buy,sell dates here too
-    print('### END BACKTESTING #########################################################')
+    logger.info('### END BACKTESTING #########################################################')
     return DataFrame.from_records(trades, columns=labels)
 
 
@@ -193,7 +193,7 @@ def start(args):
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     )
 
-    print('---- backtesting start ----')
+    logger.info('---- backtesting start ----')
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
     logger.info('Using config: %s ...', args.config)

@@ -32,9 +32,8 @@ def min_roi_reached(strategy: Strategy, trade,
     time_diff = ((current_time - trade.open_date).total_seconds() / 60) / strategy.tick_interval()
     current_profit = calc_profit(trade, current_rate)
     if strategy.stoploss(trade, current_rate, current_time, time_diff, current_profit):
-        print('--- stoploss hit: profit=%s, rate=%s, time=%s (%s frames)'
-              %(current_profit, current_rate, current_time, time_diff))
-        logger.debug('Stop loss hit.')
+        logger.info('--- stoploss hit: profit=%s open=%f, rate=%s, time=%s (%s frames)'
+              %(current_profit, trade.open_rate, current_rate, current_time, time_diff))
         return True
 
     # Check if time matches and current rate is above threshold
@@ -44,7 +43,7 @@ def min_roi_reached(strategy: Strategy, trade,
     #              %(current_profit, threshold, time_diff, duration))
     #        return True
 
-    logger.debug('Threshold not reached. (cur_profit: %1.2f%%)', current_profit * 100.0)
+    logger.info('Threshold not reached. (cur_profit: %1.2f%%)', current_profit * 100.0)
     return False
 
 # Make this a pure function, that only returns True/False,
@@ -58,7 +57,7 @@ def handle_trade(strategy: Strategy, trade) -> bool:
     if not trade.is_open:
         raise ValueError('attempt to handle closed trade: {}'.format(trade))
 
-    logger.debug('Handling %s ...', trade)
+    logger.info('Handling %s ...', trade)
     current_rate = exchange.get_ticker(trade.pair)['bid']
 
     # Update statistic values for stoplosses, etc
@@ -69,10 +68,14 @@ def handle_trade(strategy: Strategy, trade) -> bool:
 
     # Check if minimal roi has been reached
     if min_roi_reached(strategy, trade, current_rate, datetime.utcnow()):
+        logger.info('min_roi reached')
         return True
+
     # FIX20171222: test needed, if we disable sell-signals tests still passes
     #logger.debug('Checking sell_signal ...')
     if get_signal(strategy, trade.pair, SignalType.SELL):
         return True
 
+    logger.info('Handling %s ... keeping!', trade)
     return False
+

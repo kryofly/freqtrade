@@ -107,6 +107,7 @@ def _process(strategy, dynamic_whitelist: Optional[int] = 0) -> bool:
                 # Check if we can sell our current pair
                 trade_state = handle_trade(strategy, trade)
                 if trade_state:
+                    logger.info('    sell has triggered')
                     current_rate = exchange.get_ticker(trade.pair)['bid']
                     msg = execute_sell(trade, current_rate)
                     Trade.session.flush()
