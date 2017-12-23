@@ -17,21 +17,22 @@ class HeikinAshiStrategy(Strategy):
 
         # adjust, so we dont let stoploss interfere so much
 
-        self._minimal_roi = { '5000':  0.2,  # put silly amount to really ride the profits
+        self._minimal_roi = { '8000':  0.2,  # put silly amount to really ride the profits
                               '4000':  0.3,
                               '2000':  0.4,
                               '1000':  0.5   # a 50% profit so quick is bound to be reversed, so take it
                             }
-        self._stoploss = -0.20    # absolutly exit if we go below buy price by this ratio
+        self._stoploss = -0.10    # absolutly exit if we go below buy price by this ratio
         self._stoploss_glide = -0.10 # larger room for movement if we go below the stoploss-floor
-        self._stoploss_glide_ema = 0.005 # lift the exit-floor slower
+        self._stoploss_glide_ema = 0.01 # lift the exit-floor slower
 
     def name(self):
         return 'heikin-ashi'
 
     # what indicators do we use
     def select_indicators(self, some_filter):
-      return [['heikinashi',   None], # A list of indicators used by
+      return [['heikinashi', None], # A list of indicators used by
+              ['rsi',       [33]],
              ]
 
     # what currency pairs do we use for backtesting
@@ -45,7 +46,7 @@ class HeikinAshiStrategy(Strategy):
          'BTC_BAT',
          'BTC_ERC',  'BTC_ETC',  'BTC_EMC2',
          'BTC_GNO',  'BTC_GRS',
-         'BTC_NEO', 
+         'BTC_NEO',
          'BTC_MER',  'BTC_MCO',
          'BTC_OK' ,  'BTC_OMG',
          'BTC_LSK',
@@ -65,28 +66,34 @@ class HeikinAshiStrategy(Strategy):
             # Notice, normal open,close,high,low has been
             # replaced with the Heikin-Ashi version
                           # current stick is green/bull/hollow
-            dataframe.loc[(dataframe['ha_open'] < dataframe['ha_close'])
-                          # and two previous was also green
-                          & (dataframe['ha_open'].shift(1) < dataframe['ha_close'].shift(1))
-                          & (dataframe['ha_open'].shift(2) < dataframe['ha_close'].shift(2))
-                          # check oldest green comes before a red
-                          & (dataframe['ha_open'].shift(2) < dataframe['ha_close'].shift(3))
-                          # three consecutive days of red sticks
-                          & (dataframe['ha_open'].shift(3) > dataframe['ha_close'].shift(3))
-                          & (dataframe['ha_open'].shift(4) > dataframe['ha_close'].shift(4))
-                          & (dataframe['ha_open'].shift(5) > dataframe['ha_close'].shift(5))
+            dataframe.loc[  # current and previous bar is green/hollow
+                            (dataframe['ha_open']          < dataframe['ha_close'])          # green bar
+                          & (dataframe['ha_open'].shift(1) < dataframe['ha_close'].shift(1)) # green bar
+                          & (dataframe['ha_low' ].shift(1) > dataframe['ha_low'  ].shift(2)) # higher low
+
+                          & (dataframe['ha_open'].shift(2) > dataframe['ha_close'].shift(2)) # red bar
+                          & (dataframe['ha_open'].shift(3) > dataframe['ha_close'].shift(3)) # red bar
+                          & (dataframe['ha_open'].shift(4) > dataframe['ha_close'].shift(4)) # red bar
+                          & (dataframe['ha_open'].shift(5) > dataframe['ha_close'].shift(5)) # red bar
+                          # For good measure, throw some oscillator in the pot
+                          & (dataframe['rsi'] < 40)
+
                           ,'buy'] = 1
             return dataframe
 
     def populate_sell_trend(self, dataframe: DataFrame) -> DataFrame:
                       # current stick is red/bear/filled
-        dataframe.loc[(dataframe['ha_open'] > dataframe['ha_close'])
-                      # and previous two sticks was also red
-                      & (dataframe['ha_open'].shift(1) > dataframe['ha_close'].shift(1))
-                      & (dataframe['ha_open'].shift(2) > dataframe['ha_close'].shift(2))
-                      # perhaps check for three consecutive days of lower relative closes
-                      & (dataframe['ha_close']          < dataframe['ha_close'].shift(1))
-                      & (dataframe['ha_close'].shift(1) < dataframe['ha_close'].shift(2))
+        dataframe.loc[
+                        (dataframe['ha_open']          > dataframe['ha_close'])          # red bar
+                      & (dataframe['ha_open'].shift(1) > dataframe['ha_close'].shift(1)) # red bar
+                      & (dataframe['ha_high'].shift(1) < dataframe['ha_high' ].shift(2)) # lower high
+                      & (dataframe['ha_open'].shift(2) < dataframe['ha_close'].shift(2)) # green bar
+                      & (dataframe['ha_open'].shift(3) < dataframe['ha_close'].shift(3)) # green bar
+                      & (dataframe['ha_open'].shift(4) < dataframe['ha_close'].shift(4)) # green bar
+                      & (dataframe['ha_open'].shift(5) < dataframe['ha_close'].shift(5)) # green bar
+                      # For good measure, throw some oscillator in the pot
+                      & (dataframe['rsi'] > 60)
+
                       ,'sell'] = 1
         return dataframe
 
