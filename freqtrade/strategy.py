@@ -50,29 +50,33 @@ class Strategy():
     # what indicators do we use
     def select_indicators(self, some_filter):
         self.log.info('selecting all indicators (default)')
-        return [['sar',        None],
-                ['adx',        None],
-                ['fastd',      None],
-                ['fastk',      None],
-                ['blower',     None],
-                ['sma',        None],
-                ['tema',       None],
-                ['mfi',        None],
-                ['rsi',        None],
-                ['ema5',       None],
-                ['ema10',      None],
-                ['ema50',      None],
-                ['ema100',     None],
+        return [['sar',        ],
+                ['adx',        ],
+              # ['stochf', [5,3]], # fastk-, fastd- period
+                # gives 'fastk' and 'fastd'
+                ['stochrsi', [14, 5, 3]],
+                # stochrsi also gives fastk and fastd
+                ['bbands',     [2,2]], # nbdevup, nbdevdn
+                # gives 'upperband', 'middleband', 
+                #       and 'lowerband'
+                ['sma',        [40]],
+                ['tema',       [9]],
+                ['mfi',        ],
+                ['rsi',        ], # default to 14
+                # all ema will output name ema+len:
+                ['ema',      [5]], # name is ema5
+                ['ema',     [10]],
+                ['ema',     [50]],
+                ['ema',    [100]],
                 ['ao',         {'fast':5, 'slow':34}],
-                ['macd',       None],
-                ['macdsignal', None],
-                ['macdhist',   None],
-                ['htsine',     None],
-                ['htleadsine', None],
-                ['plus_dm',    None],
-                ['plus_di',    None],
-                ['minus_dm',   None],
-                ['minus_di',   None]]
+                ['macd',       ],
+                # gives 'macd', 'macdsignal' and 'macdhist'
+                ['ht_sine',     ],
+                # gives 'sine' and 'leadsine'
+                ['plus_dm',    ],
+                ['plus_di',    ],
+                ['minus_dm',   ],
+                ['minus_di',   ]]
 
     # what currency pairs do we use for backtesting
     def backtest_pairs(self):
@@ -255,14 +259,14 @@ class Strategy():
 
         # TRIGGERS
         triggers = {
-            'lower_bb': dataframe['tema'] <= dataframe['blower'],
+            'lower_bb': dataframe['tema'] <= dataframe['lowerband'],
             'faststoch10': (crossed_above(dataframe['fastd'], 10.0)),
             'ao_cross_zero': (crossed_above(dataframe['ao'], 0.0)),
             'ema5_cross_ema10': (crossed_above(dataframe['ema5'], dataframe['ema10'])),
             'macd_cross_signal': (crossed_above(dataframe['macd'], dataframe['macdsignal'])),
             'sar_reversal': (crossed_above(dataframe['close'], dataframe['sar'])),
             'stochf_cross': (crossed_above(dataframe['fastk'], dataframe['fastd'])),
-            'ht_sine': (crossed_above(dataframe['htleadsine'], dataframe['htsine'])),
+            'ht_sine': (crossed_above(dataframe['leadsine'], dataframe['sine'])),
         }
         conditions.append(triggers.get(params['trigger']['type']))
 

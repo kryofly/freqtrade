@@ -50,37 +50,53 @@ def populate_indicators(strategy, dataframe: DataFrame) -> DataFrame:
 
 def prepare_indicators(strategy: Strategy, inds: list, dataframe: DataFrame) -> list:
     logger.info('---- preparing indicators ----')
-
-    funs = {'sar':    lambda _: ta.SAR(dataframe),
-            'adx':    lambda _: ta.ADX(dataframe),
-            'fastd':  lambda _: ta.STOCHF(dataframe)['fastd'],
-            'fastk':  lambda _: ta.STOCHF(dataframe)['fastk'],
-            'blower': lambda _: ta.BBANDS(dataframe, nbdevup=2, nbdevdn=2)['lowerband'],
-            'sma':    lambda _: ta.SMA(dataframe, timeperiod=40),
-            'tema':   lambda _: ta.TEMA(dataframe, timeperiod=9),
-            'mfi':    lambda _: ta.MFI(dataframe),
-            'rsi':    lambda _: ta.RSI(dataframe),
-            'ema5':   lambda _: ta.EMA(dataframe, timeperiod=5),
-            'ema10':  lambda _: ta.EMA(dataframe, timeperiod=10),
-            'ema50':  lambda _: ta.EMA(dataframe, timeperiod=50),
-            'ema100': lambda _: ta.EMA(dataframe, timeperiod=100),
-            'macd':   lambda _: ta.MACD(dataframe)['macd'],
-            'macdsignal': lambda _: ta.MACD(dataframe)['macdsignal'],
-            'macdhist':   lambda _: ta.MACD(dataframe)['macdhist'],
-            'htsine':     lambda _: ta.HT_SINE(dataframe)['sine'],
-            'htleadsine': lambda _: ta.HT_SINE(dataframe)['leadsine'],
-            'plus_dm':    lambda _: ta.PLUS_DM(dataframe),
-            'plus_di':    lambda _: ta.PLUS_DI(dataframe),
-            'minus_dm':   lambda _: ta.MINUS_DM(dataframe),
-            'minus_di':   lambda _: ta.MINUS_DI(dataframe),
-            'heikinashi':  lambda args: heikinashi(strategy,args).run(dataframe),
-            'ao':  lambda args: awesome_oscillator(strategy,args).run(dataframe),
-            'lin': lambda args: linear_comb(strategy,args).run(dataframe)
-            }
     for ind in inds:
-        [name, args] = ind
+        args = None
+        if len(ind) == 1:
+            name = ind.pop()
+        else:
+            args = ind.pop()
+            name = ind.pop()
         logger.info('preparing indicator: %s, args=%s' %(name,args))
-        dataframe[name] = funs[name](args)
+        new = False
+        ali = None
+        # Four types of how we call indicators
+        # Either using the 'new' flag, that will run the indicator and merge the
+        # columns in the resulting dataframe. By doing that, we have no control
+        # of the column naming, and it is unfortunate since they collide (stochf and stochrsi)
+        if name == 'bbands' or name == 'ht_sine':
+            new = True
+        if name == 'macd' or name == 'stochf' or name == 'stochrsi':
+            new = True
+        # The second way, is to call the indicator, assume it will only return a series
+        # and add that series to our dataframe with an aliased name: name + first-argument
+        # example calling ta.EMA(5) becomes columnname EMA5 in the dataframe
+        if name == 'ema':
+            ali = True
+        # The third way is to call a defclass method which is for more advanced indicators
+        # or python-only indicators
+        if name == 'heikinashi':
+            dataframe[name] = heikinashi(strategy,args).run(dataframe)
+        elif name == 'ao':
+            dataframe[name] = awesome_oscillator(strategy,args).run(dataframe)
+        elif name == 'lin':
+            dataframe[name] = linear_comb(strategy,args).run(dataframe)
+        else:
+          f = getattr(ta,name.upper())
+          a = [dataframe]
+          a.extend(args or [])
+          if new: # this is the cleaned up version
+              df = f(*a) # get result of DataFrames
+              for col in df.columns: # append each column
+                  ser = df[col] # get column from new DF
+                  dataframe[col] = ser # and insert it into old DF
+          elif ali:
+              dataframe[name + str(args[0])] = f(*a)
+          else:
+              # the fourth way is to use the old way of just simply
+              # assuming the indicator function has the same name
+              # and returns a series
+              dataframe[name] = f(*a)
 
 def analyze_ticker(strategy, ticker_history: List[Dict]) -> DataFrame:
     """
