@@ -1,7 +1,9 @@
 """
 Functions to work with pandas dataframes
 """
+import io
 import os
+import math
 import json
 import logging
 from datetime import timedelta
@@ -40,3 +42,42 @@ def load_dataframe(datadir, ticker_interval: int = 5, pairs: [List[str]] = None)
                result[pair] = json.load(tickerdata)
     return result
 
+def file_write_dataframe_json(df: DataFrame, h: io.TextIOWrapper):
+    """
+     write a dataframe to file (via filehandle) as JSON encoded
+    """
+    pkeys = df.keys()
+    j = 0
+    h.write('{\n')
+    z = 0
+    for key in pkeys:
+        if j > 0:
+            h.write(',')
+        j += 1
+        h.write('\n"%s":[' % key)
+        val = df[key]
+        sorted = val.sort_index()
+        k = 0
+        date = False
+        if key == 'date':
+            date = True
+        for col in sorted.index:
+            z += 1
+            if (z % 20) == 0:
+                h.write('\n')
+            if k > 0:
+                h.write(',')
+            k += 1
+            v = val[col]
+            if date:
+                h.write('"%s"' % v)
+            else:
+                if float(v):
+                    if math.isnan(v):
+                        h.write('null')
+                    else:
+                        h.write('%f' % v)
+                else:
+                    h.write('"%s"' % v)
+        h.write(']\n')
+    h.write('}\n')

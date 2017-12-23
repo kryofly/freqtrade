@@ -18,6 +18,7 @@ from freqtrade.optimize import load_data, preprocess
 from freqtrade.persistence import Trade
 from freqtrade.strategy import Strategy
 from freqtrade.trade import calc_profit
+from freqtrade.dataframe import file_write_dataframe_json
 
 logger = logging.getLogger(__name__)
 
@@ -26,44 +27,15 @@ def backtest_export_json(args, config, prepdata, results):
     tickint = str(args.ticker_interval)
     h = open(args.export_json, 'w')
     h.write('{"ticker_interval": %s,\n' % tickint)
-    h.write('"pairs":[\n')
+    h.write('"pairs":{\n')
     i = 0
     for pair, pair_data in prepdata.items():
         if i > 0:
             h.write(',')
         i += 1
-        h.write('"%s":{' % pair)
-        pkeys = pair_data.keys()
-        j = 0
-        for key in pkeys:
-            if j > 0:
-                h.write(',')
-            j += 1
-            h.write('"%s":[' % key)
-            val = pair_data[key]
-            sorted = val.sort_index()
-            k = 0
-            date = False
-            if key == 'date':
-                date = True
-            for col in sorted.index:
-                if k > 0:
-                    h.write(',')
-                k += 1
-                v = val[col]
-                if date:
-                    h.write('"%s"' % v)
-                else:
-                    if float(v):
-                        if math.isnan(v):
-                            h.write('null')
-                        else:
-                            h.write('%f' % v)
-                    else:
-                        h.write('"%s"' % v)
-            h.write(']\n')
-        h.write('}\n')
-    h.write('],\n"results":\n')
+        h.write('"%s":' % pair)
+        file_write_dataframe_json(pair_data, h)
+    h.write('},\n"results":\n')
     h.write(results.to_json())
     h.write('}\n')
     h.close()
