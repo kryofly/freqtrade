@@ -97,7 +97,7 @@ def generate_text_table(data: Dict[str, Dict], results: DataFrame, stake_currenc
             pair,
             len(result.index),
             '{:.2f}%'.format(result.profit.mean() * 100.0),
-            '{:.08f} {}'.format(result.profit.sum(), stake_currency),
+            '{:.08f}'.format(result.profit.sum()),
             '{:.2f}'.format(result.duration.mean() * ticker_interval),
         ])
 
@@ -106,7 +106,7 @@ def generate_text_table(data: Dict[str, Dict], results: DataFrame, stake_currenc
         'TOTAL',
         len(results.index),
         '{:.2f}%'.format(results.profit.mean() * 100.0),
-        '{:.08f}'.format(results.profit.sum()),
+        '{:.08f} {}'.format(results.profit.sum(), stake_currency),
         '{:.2f}'.format(results.duration.mean() * ticker_interval),
     ])
     return tabulate(tabular_data, headers=headers)
@@ -148,7 +148,7 @@ def backtest(strategy: Strategy,
             trade = Trade(
                 open_rate=row.close,
                 open_date=row.date,
-                amount = strategy.stake_amount(),
+                amount = strategy.stake_amount(), # FIX: adjust amount towards buy_limit, just as we do in exchange trading
                 fee=exchange.get_fee() * 2
             )
             # FIX: we aren't persistence with at_stoploss_glide_rate, need to call trade.session.flush here to save the updated val
@@ -179,7 +179,7 @@ def backtest(strategy: Strategy,
     logger.info('1 frame consist of %d minutes' % strategy.tick_interval())
     logger.info('columns: SYMBOL, profit(%, or BTC?), trade duration in frames')
     for tr in trades:
-      logger.info('trade:', tr)
+      logger.info('trade: %s' % [tr])
     logger.info('-----------------')
     labels = ['currency', 'date_b', 'date_s', 'profit', 'duration'] # FIX: add buy,sell dates here too
     logger.info('### END BACKTESTING #########################################################')

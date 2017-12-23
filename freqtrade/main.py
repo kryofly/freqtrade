@@ -32,8 +32,6 @@ EVENT_RPC = 1 # Send this event to RPC destinations (Telegram, etc..)
 # carry around.
 _event_log = True # if True, send out and print events
 
-print('---- this is main.py ----')
-
 def event_log(dst, what, msg):
     if _event_log:
         logger.info('%s, %s' %(what, msg))
@@ -107,7 +105,6 @@ def _process(strategy, dynamic_whitelist: Optional[int] = 0) -> bool:
                 # Check if we can sell our current pair
                 trade_state = handle_trade(strategy, trade)
                 if trade_state:
-                    logger.info('    sell has triggered')
                     current_rate = exchange.get_ticker(trade.pair)['bid']
                     msg = execute_sell(trade, current_rate)
                     Trade.session.flush()
@@ -285,11 +282,8 @@ def main() -> None:
 
     _event_log = True
 
-    print('---- this is main() ----')
     global _CONF
-    print('---- main calling parse_args! ----')
     args = parse_args(sys.argv[1:])
-    print('---- done parsing args ----')
     if not args:
         exit(0)
 
@@ -304,7 +298,6 @@ def main() -> None:
         __version__,
         logging.getLevelName(args.loglevel)
     )
-    print('---- main loading config ----')
     
     # Load and validate configuration
     _CONF = load_config(args.config)
@@ -321,9 +314,8 @@ def main() -> None:
         else:
             logger.info('Dry run is disabled. (--dry_run_db ignored)')
 
-    print('---- loading strategy----', args.strategy)
     strategy = Strategy().load(args.strategy)
-    print('loaded strategy----', strategy.name())
+    logger.info('loaded strategy %s' % strategy.name())
     
     if not args.rekt:
         print('NOT going LIVE!\nThis is an untested friendly code-fork (for educational purposes only).\nLive-trading is disabled by default, to protect you from accidentially losing money.\nIF you know what you are doing add the "--rekt=yes" flag to go live.\n\nIF you want to live-trade you probably want to use the original code at: https://github.com/gcarq/freqtrade\n');
@@ -356,11 +348,6 @@ def main() -> None:
     finally:
         cleanup()
 
-print('---- about to call main() ----')
-print('name:', __name__)
-
 if __name__ == '__main__':
-    print('---- this is main() ----')
     main()
 
-print('---- end of main file ----')

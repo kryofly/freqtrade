@@ -98,7 +98,6 @@ class Strategy():
 
     # exit trade, due to stoploss, duration, ROI reached, etc
     def stoploss(self, trade, current_rate, current_time, time_diff, current_profit):
-        self.log.info('strategy checking stoploss for trade')
 
         # Exit trade du to ROI or duration timeout
 
