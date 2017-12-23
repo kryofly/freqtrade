@@ -106,7 +106,7 @@ def generate_text_table(data: Dict[str, Dict], results: DataFrame, stake_currenc
         'TOTAL',
         len(results.index),
         '{:.2f}%'.format(results.profit.mean() * 100.0),
-        '{:.08f} {}'.format(results.profit.sum(), stake_currency),
+        '{:.08f}'.format(results.profit.sum()),
         '{:.2f}'.format(results.duration.mean() * ticker_interval),
     ])
     return tabulate(tabular_data, headers=headers)

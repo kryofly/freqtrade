@@ -31,7 +31,6 @@ def load_dataframe(datadir, ticker_interval: int = 5, pairs: [List[str]] = None)
     if pairs == None:
         raise 'load_dataframe no pairs'
     for pair in pairs:
-        print('pair:', pair)
         with open('{abspath}/{datadir}/{pair}-{ticker_interval}.json'.format(
           abspath=path,
           datadir=datadir,

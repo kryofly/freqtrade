@@ -25,9 +25,7 @@ class State(enum.Enum):
 _STATE = State.STOPPED
 
 def printdf(df: DataFrame) -> None:
-  print('==== begin print dataframe ====')
   for pair, pair_data in df.items():
-      print('--- %s' % pair)
       pkeys = pair_data.keys()
       for key in pkeys:
          sys.stdout.write(str(key + ',  '))
@@ -40,7 +38,6 @@ def printdf(df: DataFrame) -> None:
           v = pair_data[pkeys[j]].values
           sys.stdout.write(str(v[i]) + ', ')
         sys.stdout.write('\n')
-  print('==== end print dataframe ====')
 
 @synchronized
 def update_state(state: State) -> None:
@@ -146,7 +143,6 @@ def parse_args(args: List[str], description = None):
     Parses given arguments and returns an argparse Namespace instance.
     Returns None if a sub command has been selected and executed.
     """
-    print('-------- parsing args ----------')
     if description == None:
         description = 'Simple High Frequency Trading Bot for crypto currencies'
     parser = parse_args_common(args, description)
@@ -173,26 +169,21 @@ def parse_args(args: List[str], description = None):
         action='store_true',
         dest='dry_run_db',
     )
-    print('-------- parsing args, build subcommand ----------')
     build_subcommands(parser)
     parsed_args = parser.parse_args(args)
-    print('-------- parsing args, parsed args ----------')
 
     # No subcommand as been selected
     if not hasattr(parsed_args, 'func'):
         return parsed_args
 
-    print('-------- FIX: dont call func here, only parse ----------', parsed_args.func)
+    # FIX: dont call func here, only parse and return args parsed
     parsed_args.func(parsed_args)
-    print('-------- done calling func in parsing args')
     return None
 
 
 def build_subcommands(parser: argparse.ArgumentParser) -> None:
     """ Builds and attaches all subcommands """
-    print('-------- build_subcommand importing ----------')
     from freqtrade.optimize import backtesting, hyperopt
-    print('-------- build_subcommand done importing ----------')
 
     subparsers = parser.add_subparsers(dest='subparser')
 
