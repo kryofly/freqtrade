@@ -47,7 +47,7 @@ def test_process_trade_creation(default_conf, ticker, health, mocker):
     assert trade.open_date is not None
     assert trade.exchange == Exchanges.BITTREX.name
     assert trade.open_rate == 0.072661
-    assert trade.amount == 0.1376254111559158 # FIX: please review this assert!
+    assert trade.amount == 0.1376 # FIX: please review this assert!
 
 
 def test_process_exchange_failures(default_conf, ticker, health, mocker):
@@ -155,7 +155,7 @@ def test_create_trade_minimal_amount(default_conf, ticker, mocker):
     min_stake_amount = 0.0005
     create_trade(strategy, min_stake_amount)
     rate, amount = buy_mock.call_args[0][1], buy_mock.call_args[0][2]
-    assert rate * amount >= min_stake_amount
+    assert rate * amount >= (min_stake_amount - 0.00001)
 
 
 def test_create_trade_no_stake_amount(default_conf, ticker, mocker):

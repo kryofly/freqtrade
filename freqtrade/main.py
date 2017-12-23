@@ -182,6 +182,7 @@ def create_trade(strategy: Strategy, stake_amount: float) -> bool:
         raise DependencyException('No pair in whitelist')
 
     # Pick pair based on StochRSI buy signals
+    # FIX: whould we scramble whitelist before picking first feasible pair?
     for _pair in whitelist:
         if get_signal(strategy,_pair, SignalType.BUY):
             pair = _pair
@@ -192,6 +193,12 @@ def create_trade(strategy: Strategy, stake_amount: float) -> bool:
     # Calculate amount
     buy_limit = get_target_bid(exchange.get_ticker(pair))
     amount = stake_amount / buy_limit
+    amount = round(amount,6)
+    if(amount > 5):
+        amount = round(amount,0)
+    if(amount > 0.01):
+        amount = round(amount,4)
+    logger.info('Amount: %f' % amount)
 
     order_id = exchange.buy(pair, buy_limit, amount)
     # Create trade entity and return
