@@ -97,8 +97,8 @@ def generate_text_table(data: Dict[str, Dict], results: DataFrame, stake_currenc
             pair,
             len(result.index),
             '{:.2f}%'.format(result.profit.mean() * 100.0),
-            '{:.08f}'.format(result.profit.sum()),
-            '{:.2f}'.format(result.duration.mean() * ticker_interval),
+            '{:.2f}%'.format(result.profit.sum()),
+            '{:.2f}m'.format(result.duration.mean() * ticker_interval),
         ])
 
     # Append Total
@@ -106,10 +106,26 @@ def generate_text_table(data: Dict[str, Dict], results: DataFrame, stake_currenc
         'TOTAL',
         len(results.index),
         '{:.2f}%'.format(results.profit.mean() * 100.0),
-        '{:.08f}'.format(results.profit.sum()),
-        '{:.2f}'.format(results.duration.mean() * ticker_interval),
+        '{:.2f}%'.format(results.profit.sum()),
+        '{:.2f}m'.format(results.duration.mean() * ticker_interval),
     ])
     return tabulate(tabular_data, headers=headers)
+
+def backtest_report_cost_average(prepdata):
+    spent = 0 # track of how much base currency we spend
+    sold  = 0 # track of how much base currency we sell
+    for pair, pair_data in prepdata.items():
+        closes = pair_data['close']
+        ema_close = closes[0]
+        vol = 0
+        for close in closes:
+            # buy 10 worth of base
+            buyvol = 10 / close # the volume to spend 10 worth of base
+            spent += (close * buyvol)
+            vol += buyvol # track buyvolume
+            ema_close = ema_close * 0.9 + close * 0.1
+        sold += vol * ema_close
+    return round(sold / spent, 2) # return profit ratio
 
 def backtest(strategy: Strategy,
              processed: Dict[str, DataFrame],
@@ -251,6 +267,7 @@ def start(args):
         '\n====================== BACKTESTING REPORT ======================================\n%s',
         generate_text_table(data, results, config['stake_currency'], args.ticker_interval)
     )
+    logger.info('Dollar-Cost-Average profit: %fx' % backtest_report_cost_average(prepdata))
 
     if args.export_json:
         backtest_export_json(args, config, prepdata, results)
