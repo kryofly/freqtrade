@@ -62,23 +62,35 @@ def generate_text_table(data: Dict[str, Dict], results: DataFrame, stake_currenc
     :return: pretty printed table with tabulate as str
     """
     tabular_data = []
-    headers = ['pair', 'buy count', 'avg profit', 'total profit', 'avg duration']
+    headers = ['pair', 'buy count', 'avg profit', 'total profit', 'sharpe', 'drawdown', 'avg duration']
+    tot_drawdown = 0 # FIX: could do some panda magick to avoid this
     for pair in data:
         result = results[results.currency == pair]
-        tabular_data.append([
-            pair,
-            len(result.index),
-            '{:.2f}%'.format(result.profit.mean() * 100.0),
-            '{:.2f}%'.format(result.profit.sum()),
-            '{:.2f}m'.format(result.duration.mean() * ticker_interval),
-        ])
-
+        if len(result.index) > 0: # skip pairs where we've made no trades
+            v = result.profit.values
+            std = v.std()
+            if len(result.index) < 20: # StdDev when N is low is useless
+                std = 1
+            tot_drawdown += v.min()
+            sharpe = v.mean() / std # express the average return in units of risk
+                                    # assume we live in a zero-interest world
+            tabular_data.append([
+                pair,
+                len(result.index),
+                '{:.2f}%'.format(result.profit.mean() * 100.0),
+                '{:.2f}%'.format(result.profit.sum()),
+                '{:.2f}%'.format(sharpe),
+                '{:.2f}%'.format(v.min()), # max Drawdown
+                '{:.2f}m'.format(result.duration.mean() * ticker_interval),
+            ])
     # Append Total
     tabular_data.append([
         'TOTAL',
         len(results.index),
         '{:.2f}%'.format(results.profit.mean() * 100.0),
         '{:.2f}%'.format(results.profit.sum()),
+        '{:.2f}%'.format(results.profit.mean() / results.profit.std()),
+        '{:.2f}%'.format(tot_drawdown), # sum over min of each profit array in results
         '{:.2f}m'.format(results.duration.mean() * ticker_interval),
     ])
     return tabulate(tabular_data, headers=headers)
