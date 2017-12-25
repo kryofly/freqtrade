@@ -11,6 +11,7 @@ from cachetools import cached, TTLCache
 
 from freqtrade import OperationalException
 from freqtrade.exchange.bittrex import Bittrex
+from freqtrade.exchange.testdummy import Testdummy
 from freqtrade.exchange.interface import Exchange
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,7 @@ class Exchanges(enum.Enum):
     Maps supported exchange names to correspondent classes.
     """
     BITTREX = Bittrex
+    TESTDUMMY = Testdummy
 
 
 def init(config: dict) -> None:
