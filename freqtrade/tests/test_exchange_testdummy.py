@@ -1,24 +1,13 @@
 # pragma pylint: disable=missing-docstring,C0103
-import copy
-from unittest.mock import MagicMock
 
 import pytest
-import requests
+from unittest.mock import MagicMock
+
 from sqlalchemy import create_engine
-
-from freqtrade import DependencyException, OperationalException
-from freqtrade.analyze import SignalType
-from freqtrade.exchange import Exchanges
-from freqtrade.main import create_trade, init, \
-    get_target_bid, _process
-from freqtrade.misc import get_state, State
 from freqtrade.persistence import Trade
-from freqtrade.trade import handle_trade
-
 from freqtrade.strategy import Strategy
 from freqtrade.tests.strattest import XStrategy
-
-from freqtrade.main import create_trade, init, get_target_bid, execute_sell
+from freqtrade.main import create_trade, execute_sell
 from freqtrade import exchange
 from freqtrade import persistence
 

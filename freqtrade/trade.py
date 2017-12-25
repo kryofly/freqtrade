@@ -18,6 +18,10 @@ def calc_profit(trade, rate: Optional[float] = None) -> float:
     :return: profit in percentage as float
     """
     getcontext().prec = 8
+    # KLUDGE/WARNING: Python is trying to accomodate everyone
+    #      by treaing number zero (integer or float)
+    #      as logical False. If we really have a zero-price
+    #      that should override trade.close_rate
     return float((Decimal(rate or trade.close_rate) - Decimal(trade.open_rate))
                  / Decimal(trade.open_rate) - Decimal(trade.fee))
 

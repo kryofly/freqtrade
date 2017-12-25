@@ -134,7 +134,9 @@ def get_signal(strategy: Strategy, pair: str, signal: SignalType) -> bool:
 
     # Check if dataframe is out of date
     signal_date = arrow.get(latest['date'])
-    if signal_date < arrow.now() - timedelta(minutes=10):
+    # aestethically use utcnow, just to avoid arrow bugs in TZ
+    # arrow.now() == arrow.utcnow(), just printed differently
+    if signal_date < (arrow.utcnow() - timedelta(minutes=10)):
         return False
 
     result = latest[signal.value] == 1

@@ -112,6 +112,10 @@ def _process(strategy, dynamic_whitelist: Optional[int] = 0) -> bool:
                     event_log(EVENT_RPC, 'execute_sell', msg)
                 state_changed = trade_state or state_changed
 
+            # FIX: do we really need to call flush here, even
+            # though we do it in buy/sell?
+            # Make a test that exposes that by remarking this
+            # flush
             Trade.session.flush()
     except (requests.exceptions.RequestException, json.JSONDecodeError) as error:
         logger.warning(
@@ -203,6 +207,8 @@ def create_trade(strategy: Strategy, stake_amount: float) -> bool:
 
     order_id = exchange.buy(pair, buy_limit, amount)
     # Create trade entity and return
+    # FIX: move out the RPC messaging and let the return
+    # value of this function signal wether and what we should RPC
     rpc.send_msg('*{}:* Buying [{}]({}) with limit `{:.8f}`'.format(
         exchange.get_name().upper(),
         pair.replace('_', '/'),
