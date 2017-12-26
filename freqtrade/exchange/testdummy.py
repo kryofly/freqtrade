@@ -30,7 +30,7 @@ class Testdummy(Exchange):
             return False
         else:
             return True
-    def make_uuid(self):
+    def _make_uuid(self):
         return format('AAAA%x' %(int(random.random() *
                                      pow(10,16))))
 
@@ -54,14 +54,14 @@ class Testdummy(Exchange):
                 rate=rate,
                 amount=amount))
         else:
-            uuid = self.make_uuid()
+            uuid = self._make_uuid()
             self._pairs[uuid] = [pair, rate, amount]
             # FIX: log event
-            return [pair, rate, amount]
+            return uuid
 
     def sell(self, pair: str, rate: float, amount: float) -> str:
         found = None
-        for uuid, rec in self._pairs:
+        for uuid, rec in self._pairs.items():
             [pair2, rate2, amount2] = rec
             if pair2 == pair:
                 return
