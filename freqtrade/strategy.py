@@ -15,7 +15,7 @@ class Strategy():
     def default_config(self):
         #### Edit these
         self._backtest_pairs = ['BTC_ETH'] # what pairs to use for backtesting
-        self._stake_currency = 'BTC', # base currency
+        self._stake_currency = 'BTC' # base currency
         self._stake_amount = 0.01 # each trades maximum worth
         self._max_open_trades = 3 # concurrently ongoing trades
         self._tick_interval   = 5 # what minute data to use
