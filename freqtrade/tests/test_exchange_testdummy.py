@@ -19,8 +19,11 @@ def setup_teststrategy():
 def trade_conf():
     """ Returns specialized configuration, using exchange testdummy"""
     configuration = {
-        "dry_run": True,
+        # Note: if dry_run is set to True, the exchange
+        # is bypassed for buy/sell calls
+        "dry_run": False,
         "stake_currency": "BTC",
+        "stake_amount": 0.001,
         "exchange": {
             "name": "testdummy",
             "failrate": 0,
@@ -30,6 +33,16 @@ def trade_conf():
                 "BTC_TRST",
                 "BTC_SWT",
                 "BTC_BCC"
+            ],
+            # Available pairs on the exchange
+            "test_pairs": [
+                "BTC_ETH",
+                "BTC_TKN",
+                "BTC_TRST",
+                "BTC_SWT",
+                "BTC_BCC",
+                "BTC_FOO",
+                "BTC_BAR"
             ]
         },
     }
@@ -92,4 +105,3 @@ def test_exchange_testdummy(trade_conf, ticker, health, mocker):
 
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     assert trades == []
-

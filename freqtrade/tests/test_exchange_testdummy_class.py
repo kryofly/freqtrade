@@ -18,17 +18,26 @@ def trade_conf():
                 "BTC_LTC",
                 "BTC_GNO",
                 "BTC_XRP"
+            ],
+            "test_pairs": [
+                "BTC_ETH",
+                "BTC_LTC",
+                "BTC_GNO",
+                "BTC_XRP"
             ]
         },
     }
     return configuration
 
-def test_simple_testdummy_class_kludge(trade_conf):
+def test_simple_testdummy_class(trade_conf):
     api = exchange.init(trade_conf)
+    # exchange should return the api
     assert exchange._API
 
-def test_simple_testdummy_class(trade_conf):
-    api = exchange.Testdummy({})
+def test_simple_testdummy_class_kludge(trade_conf):
+    # we shouldn't call the testdummy class directly
+    # we only do it in this test
+    api = exchange.Testdummy(trade_conf['exchange'])
     assert api
 
 def test_simple_testdummy_sim_fail(trade_conf):

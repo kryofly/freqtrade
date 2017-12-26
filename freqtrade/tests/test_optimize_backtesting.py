@@ -150,5 +150,5 @@ def test_backtest_generate_text_table(default_conf):
     data = load_data_test('sine')
     prepdata = optimize.preprocess(strategy, data)
     results = backtest(strategy, prepdata, 1, True)
-    txt = generate_text_table(data, results, strategy.stake_currency(), strategy.tick_interval())
+    txt = generate_text_table(data, results, strategy.tick_interval())
     assert isinstance(txt, str)

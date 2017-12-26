@@ -62,6 +62,8 @@ def init(config: dict) -> None:
     validate_pairs(config['exchange']['pair_whitelist'])
 
 
+# FIX: check of pairs against base currency is removed
+#      This will be removed eventually if multi-base is supported
 def validate_pairs(pairs: List[str]) -> None:
     """
     Checks if all given pairs are tradable on the current exchange.
@@ -75,12 +77,12 @@ def validate_pairs(pairs: List[str]) -> None:
         logger.warning('Unable to validate pairs (assuming they are correct). Reason: %s', e)
         return
 
-    stake_cur = _CONF['stake_currency']
+    #stake_cur = _CONF['stake_currency']
     for pair in pairs:
-        if not pair.startswith(stake_cur):
-            raise OperationalException(
-                'Pair {} not compatible with stake_currency: {}'.format(pair, stake_cur)
-            )
+        #if not pair.startswith(stake_cur):
+        #    raise OperationalException(
+        #        'Pair {} not compatible with stake_currency: {}'.format(pair, stake_cur)
+        #    )
         if pair not in markets:
             raise OperationalException(
                 'Pair {} is not available at {}'.format(pair, _API.name.lower()))

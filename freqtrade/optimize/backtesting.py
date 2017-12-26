@@ -56,7 +56,7 @@ def get_timeframe(data: Dict[str, Dict]) -> Tuple[arrow.Arrow, arrow.Arrow]:
     return arrow.get(min_date), arrow.get(max_date)
 
 
-def generate_text_table(data: Dict[str, Dict], results: DataFrame, stake_currency, ticker_interval) -> str:
+def generate_text_table(data: Dict[str, Dict], results: DataFrame, ticker_interval) -> str:
     """
     Generates and returns a text table for the given backtest data and the results dataframe
     :return: pretty printed table with tabulate as str
@@ -217,12 +217,8 @@ def start(args):
         logger.info('Using local backtesting data, pairs: %s' % pairs)
         data = load_data(args.datadir, args.ticker_interval, pairs)
 
-    amount = config['stake_amount']
-    if amount == 0:
-        amount = strategy.stake_amount()
-    currency = config['stake_currency']
-    if currency == None:
-        currency = strategy.stake_currency()
+    amount   = strategy.stake_amount()
+    currency = strategy.stake_currency()
     logger.info('Using stake_currency: %s ...', currency)
     logger.info('Using stake_amount: %s ...', amount)
 
@@ -249,7 +245,7 @@ def start(args):
     printdf(prepdata)
     logger.info(
         '\n====================== BACKTESTING REPORT ======================================\n%s',
-        generate_text_table(data, results, config['stake_currency'], args.ticker_interval)
+        generate_text_table(data, results, args.ticker_interval)
     )
     logger.info('Dollar-Cost-Average profit: %fx' % backtest_report_cost_average(prepdata))
 

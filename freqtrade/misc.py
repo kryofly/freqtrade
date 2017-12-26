@@ -248,8 +248,6 @@ CONF_SCHEMA = {
     'type': 'object',
     'properties': {
         'max_open_trades': {'type': 'integer', 'minimum': 1},
-        'stake_currency': {'type': 'string', 'enum': ['BTC', 'ETH', 'USDT']},
-        'stake_amount': {'type': 'number', 'minimum': 0},
         'dry_run': {'type': 'boolean'},
         'bid_strategy': {
             'type': 'object',
@@ -311,8 +309,6 @@ CONF_SCHEMA = {
     ],
     'required': [
         'max_open_trades',
-        'stake_currency',
-        'stake_amount',
         'dry_run',
         'bid_strategy',
         'telegram'

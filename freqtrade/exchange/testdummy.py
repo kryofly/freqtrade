@@ -14,6 +14,7 @@ class Testdummy(Exchange):
     def __init__(self, config):
         self.conf = config
         self.log = logging.getLogger(__name__)
+        self._exchange_pairs = config['test_pairs']
         self._pairs = dict() # what pairs we are currenty holding
         self._events = [] # log all actions
 
@@ -137,10 +138,17 @@ class Testdummy(Exchange):
         return None
 
     def get_markets(self) -> List[str]:
-        return self.conf['pair_whitelist']
+        return self.conf['test_pairs']
 
     def get_market_summaries(self) -> List[Dict]:
         return None
 
     def get_wallet_health(self) -> List[Dict]:
-        return None
+        if self.sim_fail():
+            raise OperationalException('Wallet health check failed')
+        l = [{'Currency':    pair,
+              'IsActive':    True,
+              'LastChecked': 0,
+              'Notice':      ''
+             } for pair in self._exchange_pairs]
+        return l

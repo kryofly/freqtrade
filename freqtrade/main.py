@@ -52,7 +52,7 @@ def refresh_whitelist(strategy: Strategy, whitelist: Optional[List[str]] = None)
     sanitized_whitelist = []
     health = exchange.get_wallet_health()
     for status in health:
-        pair = '{}_{}'.format(_CONF['stake_currency'], status['Currency'])
+        pair = '{}_{}'.format(strategy.stake_currency(), status['Currency'])
         if pair not in whitelist:
             continue
         if status['IsActive']:
@@ -167,15 +167,18 @@ def create_trade(strategy: Strategy, stake_amount: float) -> bool:
     :param stake_amount: amount of btc to spend
     :return: True if a trade object has been created and persisted, False otherwise
     """
+    assert stake_amount
+    assert strategy.stake_amount()
+    assert strategy.stake_currency()
     logger.info(
         'Checking buy signals to create a new trade with stake_amount: %f ...',
         stake_amount
     )
     whitelist = copy.deepcopy(_CONF['exchange']['pair_whitelist'])
     # Check if stake_amount is fulfilled
-    if exchange.get_balance(_CONF['stake_currency']) < stake_amount:
+    if exchange.get_balance(strategy.stake_currency()) < stake_amount:
         raise DependencyException(
-            'stake amount is not fulfilled (currency={})'.format(_CONF['stake_currency'])
+            'stake amount is not fulfilled (currency={})'.format(strategy.stake_currency())
         )
 
     # Remove currently opened and latest pairs from whitelist

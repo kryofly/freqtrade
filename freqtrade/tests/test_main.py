@@ -29,6 +29,8 @@ def test_process_trade_creation(default_conf, ticker, health, mocker):
                           get_ticker=ticker,
                           get_wallet_health=health,
                           buy=MagicMock(return_value='mocked_limit_buy'))
+    whitelist = default_conf['exchange']['pair_whitelist']
+    assert whitelist
     init(default_conf, create_engine('sqlite://'))
 
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
