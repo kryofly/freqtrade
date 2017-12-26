@@ -21,15 +21,16 @@ class Testdummy(Exchange):
 
     # Probability with exchange problem
     #@property
-    def test_failrate(self) -> float:
+    def _test_failrate(self) -> float:
         #return 0.1 # Expected: every 10th other request will fail
         return self.conf['failrate']
 
     def sim_fail(self):
-        if random.random() > self.test_failrate():
+        if random.random() > self._test_failrate():
             return False
         else:
             return True
+
     def _make_uuid(self):
         return format('AAAA%x' %(int(random.random() *
                                      pow(10,16))))
@@ -55,30 +56,26 @@ class Testdummy(Exchange):
                 amount=amount))
         else:
             uuid = self._make_uuid()
-            self._pairs[uuid] = [pair, rate, amount]
+            self._pairs[uuid] = [pair, rate, amount, 'LIMIT_BUY']
             # FIX: log event
             return uuid
 
     def sell(self, pair: str, rate: float, amount: float) -> str:
-        found = None
-        for uuid, rec in self._pairs.items():
-            [pair2, rate2, amount2] = rec
-            if pair2 == pair:
-                return
-        if not found:
-            return None
         if self.sim_fail():
             raise OperationalException('{message} params=({pair}, {rate}, {amount})'.format(
                 message='Exchangedummy Sell failed',
                 pair=pair,
                 rate=rate,
                 amount=amount))
-        else:
-            # FIX: log event
-            return [pair, rate, amount]
+        for uuid, rec in self._pairs.items():
+            [pair2, rate2, amount2, order_type] = rec
+            if pair2 == pair and order_type == 'LIMIT_BUY':
+                rec[3] = 'LIMIT_SELL'
+                return uuid
+        return None
 
     def get_balance(self, currency: str) -> float:
-        return None
+        return random.random() * 1000
 
     def get_balances(self):
         return None
@@ -119,10 +116,10 @@ class Testdummy(Exchange):
                 message='cant get order',
                 order_id=order_id))
         data = self._pairs[order_id] # uuid
-        # data :: [pair, rate, amount]
+        # data :: [pair, rate, amount, uuid]
         return {
             'id': order_id,
-            'type': 'limit', # data['Type']
+            'type': data[3], # LIMIT_BUY or LIMIT_SELL
             'pair': data[0], # pair
             'opened': '', # date opened
             'rate': data[1],
