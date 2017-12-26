@@ -3,6 +3,7 @@ import random
 import time
 from typing import List, Dict
 from requests.exceptions import ContentDecodingError
+from freqtrade import OperationalException
 
 from freqtrade.exchange.interface import Exchange
 
@@ -33,7 +34,7 @@ class Testdummy(Exchange):
             return True
 
     def _make_uuid(self):
-        return format('AAAA%x' %(int(random.random() *
+        return format('TEST%x' %(int(random.random() *
                                      pow(10,16))))
 
     # Use a property?
@@ -116,7 +117,12 @@ class Testdummy(Exchange):
             raise OperationalException('{message} params=({order_id})'.format(
                 message='cant get order',
                 order_id=order_id))
-        data = self._pairs[order_id] # uuid
+        data = self._pairs.get(order_id) # uuid
+        if not data:
+            raise OperationalException('{message} params=({order_id})'.format(
+                message='cant get order',
+                order_id=order_id))
+
         # data :: [pair, rate, amount, uuid]
         return {
             'id': order_id,

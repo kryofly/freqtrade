@@ -60,6 +60,7 @@ def init(config: dict) -> None:
 
     # Check if all pairs are available
     validate_pairs(config['exchange']['pair_whitelist'])
+    return _API
 
 
 # FIX: check of pairs against base currency is removed
