@@ -12,8 +12,8 @@ from freqtrade import exchange
 from freqtrade import persistence
 
 
-def setup_teststrategy():
-    return XStrategy()
+def setup_teststrategy(conf):
+    return XStrategy(conf)
 
 @pytest.fixture(scope="module")
 def trade_conf():
@@ -78,7 +78,7 @@ def trades_buy_pairs(strategy, pairs):
 
 def test_exchange_testdummy(trade_conf, ticker, health, mocker):
     conf = trade_conf
-    strategy = setup_teststrategy()
+    strategy = setup_teststrategy(trade_conf)
     # FIX: create_trade needs _CONF for whitelist,
     #      the function should take config as an arg
     mocker.patch.dict('freqtrade.main._CONF', conf)

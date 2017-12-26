@@ -9,11 +9,11 @@ from freqtrade.main import create_trade, init, get_target_bid, execute_sell
 from freqtrade.persistence import Trade
 from freqtrade import exchange
 
-def setup_strategy():
-    return Strategy()
+def setup_strategy(config):
+    return Strategy(config)
 
 def test_handle_trade(default_conf, limit_buy_order, limit_sell_order, mocker):
-    strategy = setup_strategy()
+    strategy = setup_strategy(default_conf)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda *args: True)
     mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())

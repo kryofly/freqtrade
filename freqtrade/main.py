@@ -47,7 +47,7 @@ def refresh_whitelist(strategy: Strategy, whitelist: Optional[List[str]] = None)
     :param whitelist: a new whitelist (optional)
     :return: None
     """
-    whitelist = whitelist or _CONF['exchange']['pair_whitelist'] or strategy.live_pairs()
+    whitelist = whitelist or strategy.whitelist()
 
     sanitized_whitelist = []
     health = exchange.get_wallet_health()
@@ -62,9 +62,7 @@ def refresh_whitelist(strategy: Strategy, whitelist: Optional[List[str]] = None)
                 'Ignoring %s from whitelist (reason: %s).',
                 pair, status.get('Notice') or 'wallet is not active'
             )
-    if _CONF['exchange']['pair_whitelist'] != sanitized_whitelist:
-        logger.debug('Using refreshed pair whitelist: %s ...', sanitized_whitelist)
-        _CONF['exchange']['pair_whitelist'] = sanitized_whitelist
+    return sanitized_whitelist
 
 
 def _process(strategy, dynamic_whitelist: Optional[int] = 0) -> bool:
@@ -77,9 +75,12 @@ def _process(strategy, dynamic_whitelist: Optional[int] = 0) -> bool:
     state_changed = False
     try:
         # Refresh whitelist based on wallet maintenance
-        refresh_whitelist(strategy,
+        sanitized_whitelist = refresh_whitelist(strategy,
             gen_pair_whitelist(strategy.stake_currency(), topn = dynamic_whitelist) if dynamic_whitelist else None
         )
+        if strategy.whitelist() != sanitized_whitelist:
+            logger.debug('Using refreshed pair whitelist: %s ...', sanitized_whitelist)
+            strategy.set_whitelist(sanitized_whitelist)
         # Query trades from persistence layer
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
         if len(trades) < _CONF['max_open_trades']: # FIX: move into strategy
@@ -174,7 +175,7 @@ def create_trade(strategy: Strategy, stake_amount: float) -> bool:
         'Checking buy signals to create a new trade with stake_amount: %f ...',
         stake_amount
     )
-    whitelist = copy.deepcopy(_CONF['exchange']['pair_whitelist'])
+    whitelist = copy.deepcopy(strategy.whitelist())
     # Check if stake_amount is fulfilled
     if exchange.get_balance(strategy.stake_currency()) < stake_amount:
         raise DependencyException(

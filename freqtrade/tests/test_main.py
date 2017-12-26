@@ -16,11 +16,14 @@ from freqtrade.persistence import Trade
 from freqtrade.strategy import Strategy
 from freqtrade.trade import handle_trade
 
-def setup_strategy():
-    return Strategy()
+def setup_strategy(default_conf):
+    s = Strategy(default_conf)
+    # KLUDGE need to restore the strategy since it is used between tests
+    s._config['exchange']['pair_whitelist'] = ['BTC_ETH']
+    return Strategy(default_conf)
 
 def test_process_trade_creation(default_conf, ticker, health, mocker):
-    strategy = setup_strategy()
+    strategy = setup_strategy(default_conf)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda *args: True)
@@ -53,7 +56,7 @@ def test_process_trade_creation(default_conf, ticker, health, mocker):
 
 
 def test_process_exchange_failures(default_conf, ticker, health, mocker):
-    strategy = setup_strategy()
+    strategy = setup_strategy(default_conf)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda *args: True)
@@ -70,7 +73,7 @@ def test_process_exchange_failures(default_conf, ticker, health, mocker):
 
 
 def test_process_operational_exception(default_conf, ticker, health, mocker):
-    strategy = setup_strategy()
+    strategy = setup_strategy(default_conf)
     msg_mock = MagicMock()
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=msg_mock)
@@ -90,7 +93,7 @@ def test_process_operational_exception(default_conf, ticker, health, mocker):
 
 
 def test_process_trade_handling(default_conf, ticker, limit_buy_order, health, mocker):
-    strategy = setup_strategy()
+    strategy = setup_strategy(default_conf)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
     mocker.patch('freqtrade.main.get_signal',
@@ -114,7 +117,7 @@ def test_process_trade_handling(default_conf, ticker, limit_buy_order, health, m
 
 
 def test_create_trade(default_conf, ticker, limit_buy_order, mocker):
-    strategy = setup_strategy()
+    strategy = setup_strategy(default_conf)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda *args: True)
     mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
@@ -145,7 +148,7 @@ def test_create_trade(default_conf, ticker, limit_buy_order, mocker):
 
 
 def test_create_trade_minimal_amount(default_conf, ticker, mocker):
-    strategy = setup_strategy()
+    strategy = setup_strategy(default_conf)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda *args: True)
@@ -161,7 +164,7 @@ def test_create_trade_minimal_amount(default_conf, ticker, mocker):
 
 
 def test_create_trade_no_stake_amount(default_conf, ticker, mocker):
-    strategy = setup_strategy()
+    strategy = setup_strategy(default_conf)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda *args: True)
     mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
@@ -175,7 +178,7 @@ def test_create_trade_no_stake_amount(default_conf, ticker, mocker):
 
 
 def test_create_trade_no_pairs(default_conf, ticker, mocker):
-    strategy = setup_strategy()
+    strategy = setup_strategy(default_conf)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda *args: True)
     mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())
@@ -183,15 +186,12 @@ def test_create_trade_no_pairs(default_conf, ticker, mocker):
                           validate_pairs=MagicMock(),
                           get_ticker=ticker,
                           buy=MagicMock(return_value='mocked_limit_buy'))
-
     with pytest.raises(DependencyException, match=r'.*No pair in whitelist.*'):
-        conf = copy.deepcopy(default_conf)
-        conf['exchange']['pair_whitelist'] = []
-        mocker.patch.dict('freqtrade.main._CONF', conf)
+        strategy._config['exchange']['pair_whitelist'] = []
         create_trade(strategy, default_conf['stake_amount'])
 
 def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mocker):
-    strategy = setup_strategy()
+    strategy = setup_strategy(default_conf)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     mocker.patch('freqtrade.main.get_signal', side_effect=lambda *args: True)
     mocker.patch.multiple('freqtrade.rpc', init=MagicMock(), send_msg=MagicMock())

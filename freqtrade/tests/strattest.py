@@ -12,9 +12,9 @@ from freqtrade.strategy import Strategy
 
 class XStrategy(Strategy):
 
-    def __init__(self):
+    def __init__(self, config=None):
         self.log = logging.getLogger(__name__)
-        self.default_config()
+        self.default_config(config)
         
     def name(self):
         return 'test-strategy'

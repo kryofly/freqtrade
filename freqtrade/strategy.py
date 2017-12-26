@@ -8,11 +8,11 @@ from freqtrade.vendor.qtpylib.indicators import crossed_above, crossed_below
 
 class Strategy():
 
-    def __init__(self):
+    def __init__(self, config=None):
         self.log = logging.getLogger(__name__)
-        self.default_config()
-        
-    def default_config(self):
+        self.default_config(config)
+
+    def default_config(self, config=None):
         #### Edit these
         self._backtest_pairs = ['BTC_ETH'] # what pairs to use for backtesting
         self._stake_currency = 'BTC' # base currency
@@ -29,10 +29,11 @@ class Strategy():
         self._stoploss_glide_ema = 0.01  # how fast we update the gliding stoploss,
                                          # a ratio that picks this amount from
                                          # current pricerate
-        #### Dont edit from these
+        #### Dont edit these
         self._stoploss_glide_rate = None
         self._hyper_params = None
-        
+        self._config = config
+
     def load(self, filename):
         if filename is not None:
             self.log.info('loading file: %s' % filename)
@@ -281,3 +282,21 @@ class Strategy():
     # 
     def live_pairs(self):
         return self.backtest_pairs()
+
+    #
+    # Environment
+    # Not exactly trading specific
+    #
+    def whitelist(self):
+        if self._config and 'exchange' in self._config:
+            ex = self._config['exchange']
+            if 'pair_whitelist' in ex:
+                return ex['pair_whitelist']
+        return None
+
+    def set_whitelist(self, whitelist):
+        if self._config and 'exchange' in self._config:
+            ex = self._config['exchange']
+            self._config['exchange']['whitelist'] = whitelist
+            return True
+        return False
