@@ -324,7 +324,7 @@ def main() -> None:
         else:
             logger.info('Dry run is disabled. (--dry_run_db ignored)')
 
-    strategy = Strategy().load(args.strategy)
+    strategy = Strategy(_CONF).load(args.strategy)
     logger.info('loaded strategy %s' % strategy.name())
     
     if not args.rekt:

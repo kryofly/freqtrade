@@ -330,6 +330,6 @@ class Strategy():
     def set_whitelist(self, whitelist):
         if self._config and 'exchange' in self._config:
             ex = self._config['exchange']
-            self._config['exchange']['whitelist'] = whitelist
+            self._config['exchange']['pair_whitelist'] = whitelist
             return True
         return False
