@@ -52,7 +52,7 @@ class Strategy():
             mod = importlib.__import__(filename)
             classname = mod.classname
             cl = getattr(mod, classname)
-            return cl()
+            return cl(self._config)
         else:
             self.log.info('using default strategy')
             return self

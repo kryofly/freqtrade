@@ -9,10 +9,10 @@ classname = 'HeikinAshiStrategy'
 
 class HeikinAshiStrategy(Strategy):
 
-    def __init__(self):
+    def __init__(self, config=None):
         self.log = logging.getLogger(__name__)
         self.log.info('This is strategy: Heikin-Ashi')
-        self.default_config()
+        self.default_config(config)
         self._stake_amount = 0.001 # lower default stake amount, each trades maximum worth
 
         # adjust, so we dont let stoploss interfere so much
