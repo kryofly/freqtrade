@@ -152,7 +152,7 @@ class Testdummy(Exchange):
     def get_wallet_health(self) -> List[Dict]:
         if self.sim_fail():
             raise OperationalException('Wallet health check failed')
-        l = [{'Currency':    pair,
+        l = [{'Currency':    pair.split('_')[1], # 'FOO_BAR' => 'BAR'
               'IsActive':    True,
               'LastChecked': 0,
               'Notice':      ''
