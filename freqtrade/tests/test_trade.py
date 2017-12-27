@@ -5,7 +5,7 @@ from sqlalchemy import create_engine
 
 from freqtrade.strategy import Strategy
 from freqtrade.trade import handle_trade
-from freqtrade.main import create_trade, init, get_target_bid, execute_sell
+from freqtrade.main import create_trade, init, execute_sell
 from freqtrade.persistence import Trade
 from freqtrade import exchange
 

@@ -153,14 +153,6 @@ def execute_sell(trade: Trade, limit: float) -> None:
           fmt_exp_profit)
     return msg
 
-def get_target_bid(ticker: Dict[str, float]) -> float:
-    """ Calculates bid target between current ask price and last price """
-    if ticker['ask'] < ticker['last']:
-        return ticker['ask']
-    balance = _CONF['bid_strategy']['ask_last_balance'] # FIX: move into strategy
-    return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
-
-
 def create_trade(strategy: Strategy, stake_amount: float) -> bool:
     """
     Checks the implemented trading indicator(s) for a randomly picked pair,
@@ -200,7 +192,7 @@ def create_trade(strategy: Strategy, stake_amount: float) -> bool:
         return False
 
     # Calculate amount
-    buy_limit = get_target_bid(exchange.get_ticker(pair))
+    buy_limit = strategy.get_target_bid(exchange.get_ticker(pair))
     amount = stake_amount / buy_limit
     amount = round(amount,6)
     if(amount > 5):

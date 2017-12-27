@@ -24,9 +24,6 @@ def default_conf():
             "0":  0.04
         },
         "stoploss": -0.10,
-        "bid_strategy": {
-            "ask_last_balance": 0.0
-        },
         "exchange": {
             "name": "bittrex",
             "enabled": True,

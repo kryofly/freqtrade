@@ -9,8 +9,7 @@ from sqlalchemy import create_engine
 from freqtrade import DependencyException, OperationalException
 from freqtrade.analyze import SignalType
 from freqtrade.exchange import Exchanges
-from freqtrade.main import create_trade, init, \
-    get_target_bid, _process
+from freqtrade.main import create_trade, init, _process
 from freqtrade.misc import get_state, State
 from freqtrade.persistence import Trade
 from freqtrade.strategy import Strategy
@@ -217,16 +216,19 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_sell_order, mo
             current_rate = exchange.get_ticker(trade.pair)['bid']
             main.execute_sell(trade, current_rate)
 
-def test_balance_fully_ask_side(mocker):
-    mocker.patch.dict('freqtrade.main._CONF', {'bid_strategy': {'ask_last_balance': 0.0}})
-    assert get_target_bid({'ask': 20, 'last': 10}) == 20
+def test_balance_fully_ask_side(default_conf, mocker):
+    strategy = setup_strategy(default_conf)
+    strategy.ask_last_balance(0.0)
+    assert strategy.get_target_bid({'ask': 20, 'last': 10}) == 20
 
 
-def test_balance_fully_last_side(mocker):
-    mocker.patch.dict('freqtrade.main._CONF', {'bid_strategy': {'ask_last_balance': 1.0}})
-    assert get_target_bid({'ask': 20, 'last': 10}) == 10
+def test_balance_fully_last_side(default_conf, mocker):
+    strategy = setup_strategy(default_conf)
+    strategy.ask_last_balance(1.0)
+    assert strategy.get_target_bid({'ask': 20, 'last': 10}) == 10
 
 
-def test_balance_bigger_last_ask(mocker):
-    mocker.patch.dict('freqtrade.main._CONF', {'bid_strategy': {'ask_last_balance': 1.0}})
-    assert get_target_bid({'ask': 5, 'last': 10}) == 5
+def test_balance_bigger_last_ask(default_conf, mocker):
+    strategy = setup_strategy(default_conf)
+    strategy.ask_last_balance(1.0)
+    assert strategy.get_target_bid({'ask': 5, 'last': 10}) == 5

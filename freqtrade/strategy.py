@@ -1,3 +1,4 @@
+from typing import Dict, Optional, List
 import logging
 #import modulelib
 import importlib
@@ -5,6 +6,15 @@ from functools import reduce
 from hyperopt import hp
 from pandas import DataFrame
 from freqtrade.vendor.qtpylib.indicators import crossed_above, crossed_below
+
+
+# @property descriptors doesn't get rid of the boilerplate
+def getset(obj, slot, val):
+   if val is None:
+       return obj.__dict__[slot]
+   else:
+       obj.__dict__[slot] = val
+       return val
 
 class Strategy():
 
@@ -14,11 +24,13 @@ class Strategy():
 
     def default_config(self, config=None):
         #### Edit these
+        #### [0,1] means a float having a value anywhere (and including) from 0 to 1
         self._backtest_pairs = ['BTC_ETH'] # what pairs to use for backtesting
         self._stake_currency = 'BTC' # base currency
         self._stake_amount = 0.01 # each trades maximum worth
         self._max_open_trades = 3 # concurrently ongoing trades
         self._tick_interval   = 5 # what minute data to use
+        self._ask_last_balance = 0 # [0,1] buy price from last to ask
         self._minimal_roi = { '40':  0.0,
                               '30':  0.01,
                               '20':  0.02,
@@ -286,6 +298,23 @@ class Strategy():
     # 
     def live_pairs(self):
         return self.backtest_pairs()
+
+    #
+    # bid/ask strategy
+    # These should be enabled so that we can
+    # differentiate on exchange,
+    # for that to happen we need a 'env' variable
+    # given here
+    #
+
+    def ask_last_balance(self, val=None):
+        return getset(self, '_ask_last_balance', val)
+
+    def get_target_bid(self, ticker: Dict[str, float]) -> float:
+        if ticker['ask'] < ticker['last']:
+            return ticker['ask']
+        balance = self._ask_last_balance
+        return ticker['ask'] + balance * (ticker['last'] - ticker['ask'])
 
     #
     # Environment

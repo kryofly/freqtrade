@@ -249,18 +249,6 @@ CONF_SCHEMA = {
     'properties': {
         'max_open_trades': {'type': 'integer', 'minimum': 1},
         'dry_run': {'type': 'boolean'},
-        'bid_strategy': {
-            'type': 'object',
-            'properties': {
-                'ask_last_balance': {
-                    'type': 'number',
-                    'minimum': 0,
-                    'maximum': 1,
-                    'exclusiveMaximum': False
-                },
-            },
-            'required': ['ask_last_balance']
-        },
         'exchange': {'$ref': '#/definitions/exchange'},
         'experimental': {
             'type': 'object',
@@ -310,7 +298,6 @@ CONF_SCHEMA = {
     'required': [
         'max_open_trades',
         'dry_run',
-        'bid_strategy',
         'telegram'
     ]
 }
