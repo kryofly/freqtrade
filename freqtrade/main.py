@@ -83,7 +83,7 @@ def _process(strategy, dynamic_whitelist: Optional[int] = 0) -> bool:
             strategy.set_whitelist(sanitized_whitelist)
         # Query trades from persistence layer
         trades = Trade.query.filter(Trade.is_open.is_(True)).all()
-        if len(trades) < _CONF['max_open_trades']: # FIX: move into strategy
+        if len(trades) < strategy.max_open_trades():
             try:
                 # Create entity and execute trade
                 state_changed = create_trade(strategy, strategy.stake_amount())

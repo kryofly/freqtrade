@@ -403,9 +403,7 @@ def test_count_handle(default_conf, update, ticker, mocker):
     msg_mock.reset_mock()
     _count(bot=MagicMock(), update=update)
 
-    msg = '<pre>  current    max\n---------  -----\n        1      {}</pre>'.format(
-        default_conf['max_open_trades']
-    )
+    msg = '<pre>  current\n---------\n        1</pre>'
     assert msg in msg_mock.call_args_list[0][0][0]
 
 

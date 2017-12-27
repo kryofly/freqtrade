@@ -452,9 +452,8 @@ def _count(bot: Bot, update: Update) -> None:
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
 
     message = tabulate({
-        'current': [len(trades)],
-        'max': [_CONF['max_open_trades']]
-    }, headers=['current', 'max'], tablefmt='simple')
+        'current': [len(trades)]
+    }, headers=['current'], tablefmt='simple')
     message = "<pre>{}</pre>".format(message)
     logger.debug(message)
     send_msg(message, parse_mode=ParseMode.HTML)

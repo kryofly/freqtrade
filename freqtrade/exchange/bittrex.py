@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 
 _API: _Bittrex = None
 _API_V2: _Bittrex = None
-_EXCHANGE_CONF: dict = {}
 
 
 class Bittrex(Exchange):
@@ -23,21 +22,24 @@ class Bittrex(Exchange):
     PAIR_DETAIL_METHOD: str = BASE_URL + '/Market/Index'
 
     def __init__(self, config: dict) -> None:
-        global _API, _API_V2, _EXCHANGE_CONF
+        global _API, _API_V2
+        exg = dict()
 
-        _EXCHANGE_CONF.update(config)
         _API = _Bittrex(
-            api_key=_EXCHANGE_CONF['key'],
-            api_secret=_EXCHANGE_CONF['secret'],
+            api_key=config['key'],
+            api_secret=config['secret'],
             calls_per_second=1,
             api_version=API_V1_1,
         )
         _API_V2 = _Bittrex(
-            api_key=_EXCHANGE_CONF['key'],
-            api_secret=_EXCHANGE_CONF['secret'],
+            api_key    = config['key'],
+            api_secret = config['secret'],
             calls_per_second=1,
             api_version=API_V2_0,
         )
+        exg['API']    = _API
+        exg['API_V2'] = _API_V2
+        self._exchange = exg
 
     @staticmethod
     def _validate_response(response) -> None:

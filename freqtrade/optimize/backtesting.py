@@ -226,11 +226,12 @@ def start(args):
     min_date, max_date = get_timeframe(data)
     logger.info('Measuring data from %s up to %s ...', min_date.isoformat(), max_date.isoformat())
 
-    max_open_trades = 0
-    if args.realistic_simulation:
-        max_open_trades = config['max_open_trades'] # FIX: remove from config
-    else:
-        max_open_trades = strategy.max_open_trades()
+    max_open_trades = strategy.max_open_trades()
+    # --realistic-simulation shouldn't effect concurrently
+    # open trades, because that is part of a strategy
+    # (back-off strategy, etc)
+    # but we should simulate slippage
+
     logger.info('Using max_open_trades: %s ...', max_open_trades)
 
     # Monkey patch config
