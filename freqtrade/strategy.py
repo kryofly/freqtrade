@@ -63,13 +63,17 @@ class Strategy():
                 ['sma',        [40]],
                 ['tema',       [9]],
                 ['mfi',        ],
-                ['rsi',        ], # default to 14
+                ['ao',         {'fast':5, 'slow':34}],
+                # Calculate rsi on the previous AO oscillator
+                # instead of using the default 'close'
+                # stating timeperiod is not needed (default 14)
+                ['rsi', {'price':'ao', 'timeperiod':14}],
+                #['rsi', [14]], # default to 14 periods,
                 # all ema will output name ema+len:
                 ['ema',      [5]], # name is ema5
                 ['ema',     [10]],
                 ['ema',     [50]],
                 ['ema',    [100]],
-                ['ao',         {'fast':5, 'slow':34}],
                 ['macd',       ],
                 # gives 'macd', 'macdsignal' and 'macdhist'
                 ['ht_sine',     ],

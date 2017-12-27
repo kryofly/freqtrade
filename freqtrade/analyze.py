@@ -8,6 +8,7 @@ from typing import List, Dict
 
 import arrow
 import talib.abstract as ta
+
 from pandas import DataFrame, to_datetime
 
 from freqtrade.exchange import get_ticker_history
@@ -58,6 +59,14 @@ def prepare_indicators(strategy: Strategy, inds: list, dataframe: DataFrame) -> 
             args = ind.pop()
             name = ind.pop()
         logger.info('preparing indicator: %s, args=%s' %(name,args))
+        # The ind parsing below is a real mess. But what it shows
+        # is that there is a need for some type of DSL
+        # where the oscillator and its arguments becomes
+        # in itself a small language
+        # For now the mess expresses the different types of
+        # specifying arguments in the strategy::select_indicators
+        # and also how we handle oscillators differently depending
+        # on where they come from (talib or freqtrade)
         new = False
         ali = None
         # Four types of how we call indicators
@@ -82,21 +91,28 @@ def prepare_indicators(strategy: Strategy, inds: list, dataframe: DataFrame) -> 
         elif name == 'lin':
             dataframe[name] = linear_comb(strategy,args).run(dataframe)
         else:
-          f = getattr(ta,name.upper())
-          a = [dataframe]
-          a.extend(args or [])
+          f = ta.Function(name) # getattr(ta,name.upper())
           if new: # this is the cleaned up version
+              a = [dataframe]
+              a.extend(args or [])
               df = f(*a) # get result of DataFrames
               for col in df.columns: # append each column
                   ser = df[col] # get column from new DF
                   dataframe[col] = ser # and insert it into old DF
           elif ali:
+              a = [dataframe]
+              a.extend(args or [])
               dataframe[name + str(args[0])] = f(*a)
           else:
               # the fourth way is to use the old way of just simply
               # assuming the indicator function has the same name
               # and returns a series
-              dataframe[name] = f(*a)
+              if isinstance(args,dict):
+                  dataframe[name] = f(dataframe, **args)
+              else:
+                  a = [dataframe]
+                  a.extend(args or [])
+                  dataframe[name] = f(*a)
 
 def analyze_ticker(strategy, ticker_history: List[Dict]) -> DataFrame:
     """
