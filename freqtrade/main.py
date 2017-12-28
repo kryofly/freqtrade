@@ -151,6 +151,8 @@ def execute_sell(trade: Trade, limit: float) -> None:
           exchange.get_pair_detail_url(trade.pair),
           limit,
           fmt_exp_profit)
+    # FIX: dont return a message, let the caller handle it
+    # FIX: the caller should also be responsible for calc_profit
     return msg
 
 def create_trade(strategy: Strategy, stake_amount: float) -> bool:

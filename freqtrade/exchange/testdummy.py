@@ -16,8 +16,10 @@ class Testdummy(Exchange):
         self.conf = config
         self.log = logging.getLogger(__name__)
         self._exchange_pairs = config['test_pairs']
+        self._open_orders = dict()
         self._pairs = dict() # what pairs we are currenty holding
         self._events = [] # log all actions
+        self._auto_execute = True # immediately execute orders
 
     # Test parameters
 
@@ -41,6 +43,14 @@ class Testdummy(Exchange):
     def get_events(self):
         return self._events
 
+    def set_auto_execute(how: bool):
+        self._auto_execute = how
+
+    # execute, ie, move open orders into closed
+    def execute_orders(self, filter):
+        for uuid, order in self._open_orders.items():
+            self._pairs[uuid] = order
+
     # Exchange API
 
     # Use the same fees as https://bittrex.com/fees
@@ -59,6 +69,7 @@ class Testdummy(Exchange):
         else:
             uuid = self._make_uuid()
             self._pairs[uuid] = [pair, rate, amount, 'LIMIT_BUY']
+            self._open_orders[uuid] = [pair, rate, amount, 'LIMIT_BUY']
             # FIX: log event
             return uuid
 
@@ -73,8 +84,9 @@ class Testdummy(Exchange):
             [pair2, rate2, amount2, order_type] = rec
             if pair2 == pair and order_type == 'LIMIT_BUY':
                 rec[3] = 'LIMIT_SELL'
+                self._open_orders[uuid] = [pair, rate, amount, 'LIMIT_SELL']
                 return uuid
-        return None
+        raise OperationalException('No such pair to sell, params=({pair}, {rate}, {amount})')
 
     def get_balance(self, currency: str) -> float:
         return random.random() * 1000
