@@ -55,6 +55,17 @@ def get_timeframe(data: Dict[str, Dict]) -> Tuple[arrow.Arrow, arrow.Arrow]:
             max_date = sorted_values[-1]['T']
     return arrow.get(min_date), arrow.get(max_date)
 
+def minutes_to_text(minutes):
+    if minutes > 59:
+        hours = int(minutes / 60)
+        minutes -= hours * 60
+        if hours > 23:
+            days  = int(hours / 24)
+            hours -= days * 24
+            return '%dd%dh%dm' %(days, hours, minutes)
+        else:
+            return '%dh%dm' %(hours, minutes)
+    return '%dm' % minutes
 
 def generate_text_table(data: Dict[str, Dict], results: DataFrame, ticker_interval) -> str:
     """
@@ -81,7 +92,7 @@ def generate_text_table(data: Dict[str, Dict], results: DataFrame, ticker_interv
                 '{:.2f}%'.format(result.profit.sum()),
                 '{:.2f}%'.format(sharpe),
                 '{:.2f}%'.format(v.min()), # max Drawdown
-                '{:.2f}m'.format(result.duration.mean() * ticker_interval),
+                minutes_to_text(result.duration.mean() * ticker_interval)
             ])
     # Append Total
     tabular_data.append([
@@ -91,7 +102,7 @@ def generate_text_table(data: Dict[str, Dict], results: DataFrame, ticker_interv
         '{:.2f}%'.format(results.profit.sum()),
         '{:.2f}%'.format(results.profit.mean() / results.profit.std()),
         '{:.2f}%'.format(tot_drawdown), # sum over min of each profit array in results
-        '{:.2f}m'.format(results.duration.mean() * ticker_interval),
+        minutes_to_text(result.duration.mean() * ticker_interval)
     ])
     return tabulate(tabular_data, headers=headers)
 

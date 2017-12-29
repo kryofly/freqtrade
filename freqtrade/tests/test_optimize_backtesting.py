@@ -6,7 +6,8 @@ import math
 from unittest.mock import MagicMock
 
 from freqtrade import optimize
-from freqtrade.optimize.backtesting import backtest, backtest_export_json, get_timeframe, generate_text_table, backtest_report_cost_average
+from freqtrade.optimize.backtesting import backtest, backtest_export_json, get_timeframe, generate_text_table, backtest_report_cost_average, minutes_to_text
+
 
 from freqtrade.strategy import Strategy
 
@@ -160,3 +161,11 @@ def test_backtest_report_cost_average(default_conf):
     prepdata = optimize.preprocess(strategy, data)
     profit_ratio = backtest_report_cost_average(prepdata)
     isinstance(profit_ratio, float)
+
+def test_minutes_to_text():
+    assert minutes_to_text(0) == '0m'
+    assert minutes_to_text(59) == '59m'
+    assert minutes_to_text(60) == '1h0m'
+    assert minutes_to_text(120) == '2h0m'
+    assert minutes_to_text(23 * 60 + 59) == '23h59m'
+    assert minutes_to_text(24 * 60) == '1d0h0m'
