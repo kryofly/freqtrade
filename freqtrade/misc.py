@@ -206,7 +206,7 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
     )
     backtesting_cmd.add_argument(
         '--realistic-simulation',
-        help='uses max_open_trades from config to simulate real world limitations',
+        help='uses max_open_trades from strategy to simulate real world limitations',
         action='store_true',
         dest='realistic_simulation',
     )
@@ -247,7 +247,6 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
 CONF_SCHEMA = {
     'type': 'object',
     'properties': {
-        'max_open_trades': {'type': 'integer', 'minimum': 1},
         'dry_run': {'type': 'boolean'},
         'exchange': {'$ref': '#/definitions/exchange'},
         'experimental': {
@@ -296,7 +295,6 @@ CONF_SCHEMA = {
         {'required': ['exchange']}
     ],
     'required': [
-        'max_open_trades',
         'dry_run',
         'telegram'
     ]

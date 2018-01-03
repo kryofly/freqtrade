@@ -44,13 +44,11 @@ def populate_indicators(strategy, dataframe: DataFrame) -> DataFrame:
     """
     Adds several different TA indicators to the given DataFrame
     """
-    logger.info('---- populating indicators from strategy %s----' % strategy.name())
     inds = strategy.select_indicators(None)  # select indicators according to strategy
     prepare_indicators(strategy, inds, dataframe) # possibly prepare them, before run
     return dataframe
 
 def prepare_indicators(strategy: Strategy, inds: list, dataframe: DataFrame) -> list:
-    logger.info('---- preparing indicators ----')
     for ind in inds:
         args = None
         if len(ind) == 1:
@@ -58,7 +56,7 @@ def prepare_indicators(strategy: Strategy, inds: list, dataframe: DataFrame) -> 
         else:
             args = ind.pop()
             name = ind.pop()
-        logger.info('preparing indicator: %s, args=%s' %(name,args))
+        #logger.info('preparing indicator: %s, args=%s' %(name,args))
         # The ind parsing below is a real mess. But what it shows
         # is that there is a need for some type of DSL
         # where the oscillator and its arguments becomes
