@@ -36,8 +36,8 @@ def min_roi_reached(strategy: Strategy, trade,
     time_diff = ((current_time - trade.open_date).total_seconds() / 60) / strategy.tick_interval()
     current_profit = calc_profit(trade, current_rate)
     if strategy.stoploss(trade, current_rate, current_time, time_diff, current_profit):
-        logger.info('--- stoploss hit: profit=%s, buyrate=%s rate=%s, time=%s (%s frames)'
-                    %(current_profit, trade.open_rate, current_rate, current_time, time_diff))
+        #logger.info('--- stoploss hit: profit=%s, buyrate=%s rate=%s, time=%s (%s frames)'
+        #            %(current_profit, trade.open_rate, current_rate, current_time, time_diff))
         return True
 
     # Check if time matches and current rate is above threshold
@@ -47,7 +47,7 @@ def min_roi_reached(strategy: Strategy, trade,
     #              %(current_profit, threshold, time_diff, duration))
     #        return True
 
-    logger.info('Threshold not reached. (cur_profit: %1.2f%%)', current_profit * 100.0)
+    #logger.info('Threshold not reached. (cur_profit: %1.2f%%) [open=%.8f cur=%.8f]', current_profit * 100.0, trade.open_rate, current_rate)
     return False
 
 # Make this a pure function, that only returns True/False,

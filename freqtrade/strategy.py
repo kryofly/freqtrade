@@ -167,7 +167,7 @@ class Strategy():
         # let gliding stoploss slowly converge to the maximal seen rate
         sl_glide_rate = (1 - sl_glide) * sl_glide_rate + sl_glide * sl_glide_target
         # update the glide_rate in the trade
-        self.log.info('%s adjust stoploss trail %.7f -> %.7f towards %.7f (current_rate=%s)' %(date, trade.stat_stoploss_glide_rate, sl_glide_rate, sl_glide_target, current_rate))
+        self.log.info('%s adjust stoploss trail %.8f -> %.8f towards %.8f (current_rate=%s)' %(date, trade.stat_stoploss_glide_rate, sl_glide_rate, sl_glide_target, current_rate))
         trade.stat_stoploss_glide_rate = sl_glide_rate # this is why we must persistence every frame
 
     def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:

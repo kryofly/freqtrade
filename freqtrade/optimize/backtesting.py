@@ -22,6 +22,13 @@ from freqtrade.dataframe import file_write_dataframe_json
 
 logger = logging.getLogger(__name__)
 
+# Dont overuse this function, NaN is often a perfectly fine number
+def zero_nan(num):
+    if math.isnan(num):
+        return 0
+    else:
+        return num
+
 def backtest_export_json(args, config, prepdata, results):
     logger.info('export to json file %s', args.export_json)
     tickint = str(args.ticker_interval)
@@ -85,6 +92,7 @@ def generate_text_table(data: Dict[str, Dict], results: DataFrame, ticker_interv
             tot_drawdown += v.min()
             sharpe = v.mean() / std # express the average return in units of risk
                                     # assume we live in a zero-interest world
+            duration_mean = zero_nan(result.duration.mean())
             tabular_data.append([
                 pair,
                 len(result.index),
@@ -92,9 +100,10 @@ def generate_text_table(data: Dict[str, Dict], results: DataFrame, ticker_interv
                 '{:.2f}%'.format(result.profit.sum()),
                 '{:.2f}%'.format(sharpe),
                 '{:.2f}%'.format(v.min()), # max Drawdown
-                minutes_to_text(result.duration.mean() * ticker_interval)
+                minutes_to_text(duration_mean * ticker_interval)
             ])
     # Append Total
+    duration_mean = zero_nan(results.duration.mean())
     tabular_data.append([
         'TOTAL',
         len(results.index),
@@ -102,7 +111,7 @@ def generate_text_table(data: Dict[str, Dict], results: DataFrame, ticker_interv
         '{:.2f}%'.format(results.profit.sum()),
         '{:.2f}%'.format(results.profit.mean() / results.profit.std()),
         '{:.2f}%'.format(tot_drawdown), # sum over min of each profit array in results
-        minutes_to_text(result.duration.mean() * ticker_interval)
+        minutes_to_text(duration_mean * ticker_interval)
     ])
     return tabulate(tabular_data, headers=headers)
 
@@ -134,66 +143,58 @@ def backtest(strategy: Strategy,
     :param realistic: do we try to simulate realistic trades? (default: True)
     :return: DataFrame
     """
-    logger.info('############################################################')
-    logger.info('---- BEGIN BACKTESTING ----')
+    #logger.info('############################################################')
+    #logger.info('---- BEGIN BACKTESTING ----')
     trades = []
-    trade_count_lock = {}
-    exchange._API = Bittrex({'key': '', 'secret': ''})
+    #exchange._API = Bittrex({'key': '', 'secret': ''})
     for pair, pair_data in processed.items():
         pair_data['buy'], pair_data['sell'] = 0, 0
         ticker = strategy.populate_sell_trend(strategy.populate_buy_trend(pair_data))
+        df = ticker
         # for each buy point
         lock_pair_until = None
-        for row in ticker[ticker.buy == 1].itertuples(index=True):
-            if realistic:
-                if lock_pair_until is not None and row.Index <= lock_pair_until:
-                    continue
-            if max_open_trades > 0:
-                # Check if max_open_trades has already been reached for the given date
-                if not trade_count_lock.get(row.date, 0) < max_open_trades:
-                    continue
-
-            if max_open_trades > 0:
-                # Increase lock
-                trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
-            trade = Trade(
-                open_rate=row.close,
-                open_date=row.date,
-                amount = strategy.stake_amount(), # FIX: adjust amount towards buy_limit, just as we do in exchange trading
-                fee=exchange.get_fee() * 2
-            )
-            # FIX: we aren't persistence with at_stoploss_glide_rate, need to call trade.session.flush here to save the updated val
-            logger.info('*** BUY %s date=%s, close=%s, amount=%s, fee=%s' %
-                  (pair, row.date, row.close, trade.amount, trade.fee))
-
-            # calculate win/lose forwards from buy point
-            for row2 in ticker[row.Index + 1:].itertuples(index=True):
-                strategy.step_frame(trade, row2.close, row2.date)
-                trade.update_stats(row2.close)
-                if max_open_trades > 0:
-                    # Increase trade_count_lock for every iteration
-                    trade_count_lock[row2.date] = trade_count_lock.get(row2.date, 0) + 1
-
-                if min_roi_reached(strategy, trade, row2.close, row2.date) or row2.sell == 1:
-                    reason = 'min_roi_reached'
-                    if row2.sell == 1:
+        trade = Trade(open_rate=0,
+                      open_date='',
+                      amount = strategy.stake_amount(),
+                      fee = strategy.fee() * 2
+                     )
+        tr = None
+        # FIX: reintroduce max_open_trades count and realistic flag
+        for row in df.itertuples():
+            if row.buy == 1 and tr == None:
+                tr = (row.date, row.close, row.Index)
+                trade.stat_max_rate = row.close
+                trade.stat_min_rate = row.close
+                trade.stat_stoploss_glide_rate = row.close
+                trade.open_rate = row.close
+                trade.open_date = row.date
+                trade.amount = strategy.stake_amount(), # FIX: adjust amount towards buy_limit, just as we do in exchange trading
+                trade.fee = strategy.fee() * 2
+                #logger.info('*** BUY %s date=%s, close=%s, amount=%s, fee=%s' %
+                #             (pair, row.date, row.close, trade.amount, trade.fee))
+            if tr: # currently holding a trade
+                strategy.step_frame(trade, row.close, row.date)
+                trade.update_stats(row.close)
+                #logger.info('update trade, buy_rate=%f, now_rate=%f, max=%f', trade.open_rate, row.close, trade.stat_max_rate)
+                if min_roi_reached(strategy, trade, row.close, row.date) or row.sell == 1:
+                    (o_date, o_close, o_index) = tr
+                    current_profit = calc_profit(trade, row.close)
+                    trades.append((pair, o_date, row.date, current_profit, row.Index - o_index))
+                    reason = 'min_roi/stoploss'
+                    if row.sell == 1:
                         reason = 'sell signal'
-                    current_profit = calc_profit(trade, row2.close)
-                    lock_pair_until = row2.Index
-                    logger.info('*** SELL %s, date=%s [%s], close=%s profit=%s, duration=%s frames'
-                          %(pair, row2.date, reason, row2.close, current_profit, row2.Index - row.Index))
+                    #logger.info('*** SELL %s, date=%s [%s], close=%s profit=%s, duration=%s frames'
+                    #      %(pair, row.date, reason, row.close, current_profit, row.Index - o_index))
+                    tr = None
 
-                    # FIX: add buy,sell date to the trade-log (row.date, row2.date)
-                    trades.append((pair, row.date, row2.date, current_profit, row2.Index - row.Index))
-                    break
-    logger.info('---- trades: ----')
-    logger.info('1 frame consist of %d minutes' % strategy.tick_interval())
-    logger.info('columns: SYMBOL, profit(%, or BTC?), trade duration in frames')
-    for tr in trades:
-      logger.info('trade: %s' % [tr])
-    logger.info('-----------------')
+    #logger.info('---- trades: ----')
+    #logger.info('1 frame consist of %d minutes' % strategy.tick_interval())
+    #logger.info('columns: SYMBOL, profit(%, or BTC?), trade duration in frames')
+    #for tr in trades:
+    #  logger.info('trade: %s' % [tr])
+    #logger.info('-----------------')
+    #logger.info('### END BACKTESTING #########################################################')
     labels = ['currency', 'date_b', 'date_s', 'profit', 'duration'] # FIX: add buy,sell dates here too
-    logger.info('### END BACKTESTING #########################################################')
     return DataFrame.from_records(trades, columns=labels)
 
 
@@ -205,7 +206,7 @@ def start(args):
     )
 
     logger.info('---- backtesting start ----')
-    exchange._API = Bittrex({'key': '', 'secret': ''})
+    #exchange._API = Bittrex({'key': '', 'secret': ''})
 
     logger.info('Using config: %s ...', args.config)
     config = load_config(args.config)
