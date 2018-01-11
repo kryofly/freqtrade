@@ -56,6 +56,7 @@ def prepare_indicators(strategy: Strategy, inds: list, dataframe: DataFrame) -> 
         else:
             args = ind.pop()
             name = ind.pop()
+            sname = ind.pop() # script name
         #logger.info('preparing indicator: %s, args=%s' %(name,args))
         # The ind parsing below is a real mess. But what it shows
         # is that there is a need for some type of DSL
@@ -83,11 +84,11 @@ def prepare_indicators(strategy: Strategy, inds: list, dataframe: DataFrame) -> 
         # The third way is to call a defclass method which is for more advanced indicators
         # or python-only indicators
         if name == 'heikinashi':
-            dataframe[name] = heikinashi(strategy,args).run(dataframe)
+            dataframe[sname] = heikinashi(strategy,args).run(dataframe)
         elif name == 'ao':
-            dataframe[name] = awesome_oscillator(strategy,args).run(dataframe)
+            dataframe[sname] = awesome_oscillator(strategy,args).run(dataframe)
         elif name == 'lin':
-            dataframe[name] = linear_comb(strategy,args).run(dataframe)
+            dataframe[sname] = linear_comb(strategy,args).run(dataframe)
         else:
           f = ta.Function(name) # getattr(ta,name.upper())
           if new: # this is the cleaned up version
@@ -96,21 +97,22 @@ def prepare_indicators(strategy: Strategy, inds: list, dataframe: DataFrame) -> 
               df = f(*a) # get result of DataFrames
               for col in df.columns: # append each column
                   ser = df[col] # get column from new DF
-                  dataframe[col] = ser # and insert it into old DF
+                  dataframe[sname + '_' + col] = ser # and insert it into old DF
           elif ali:
               a = [dataframe]
               a.extend(args or [])
-              dataframe[name + str(args[0])] = f(*a)
+              #dataframe[name + str(args[0])] = f(*a)
+              dataframe[sname] = f(*a)
           else:
               # the fourth way is to use the old way of just simply
               # assuming the indicator function has the same name
               # and returns a series
               if isinstance(args,dict):
-                  dataframe[name] = f(dataframe, **args)
+                  dataframe[sname] = f(dataframe, **args)
               else:
                   a = [dataframe]
                   a.extend(args or [])
-                  dataframe[name] = f(*a)
+                  dataframe[sname] = f(*a)
 
 def analyze_ticker(strategy, ticker_history: List[Dict]) -> DataFrame:
     """

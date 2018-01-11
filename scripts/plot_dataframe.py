@@ -78,8 +78,9 @@ def plot_analyzed_dataframe(args, strategy: Strategy, pairs: str) -> None:
     ax2.plot(dataframe.index.values, dataframe['sell'], 'ro', label='Sell')
     ax2.legend()
 
-    ax3.plot(dataframe.index.values, dataframe['fastk'], label='k')
-    ax3.plot(dataframe.index.values, dataframe['fastd'], label='d')
+    ax3.plot(dataframe.index.values, dataframe['sto_fastk'], label='k')
+    ax3.plot(dataframe.index.values, dataframe['sto_fastd'], label='d')
+    ax3.plot(dataframe.index.values, dataframe['rsi'], label='rsi')
     ax3.plot(dataframe.index.values, [20] * len(dataframe.index.values))
     ax3.legend()
 
