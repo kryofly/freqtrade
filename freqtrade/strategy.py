@@ -62,39 +62,27 @@ class Strategy():
 
     # what indicators do we use
     def select_indicators(self, some_filter):
-        self.log.info('selecting all indicators (default)')
-        return [#['sar', 'sar',        ],
-                #['adx', 'adx',        ],
-                ['sto', 'stochf', [5,3]], # fastk-, fastd- period
-                # gives 'fastk' and 'fastd'
-                #['stochrsi', 'stochrsi', [14, 5, 3]],
-                # stochrsi also gives fastk and fastd
-                #['bbands', 'bbands',     [2,2]], # nbdevup, nbdevdn
-                # gives 'upperband', 'middleband', 
-                #       and 'lowerband'
-                #['sma', 'sma',        [40]],
-                #['tema', 'tema',       [9]],
-                #['mfi', 'mfi',        ],
-                #['ao', 'ao',         {'fast':5, 'slow':34}],
-                # Calculate rsi on the previous AO oscillator
-                # instead of using the default 'close'
-                # stating timeperiod is not needed (default 14)
-                ['rsi', 'rsi', {'price':'close', 'timeperiod':14}],
-                #['rsi', [14]], # default to 14 periods,
-                # all ema will output name ema+len:
-                ['ema', 'ema',      [5]], # name is ema5
-                #['ema', 'ema',     [10]],
-                #['ema', 'ema',     [50]],
-                #['ema', 'ema',    [100]],
-                #['macd', 'macd',       ],
-                # gives 'macd', 'macdsignal' and 'macdhist'
-                #['ht_sine', 'ht_sine',     ],
-                # gives 'sine' and 'leadsine'
-                #['plus_dm', 'plus_dm',    ],
-                #['plus_di', 'plus_di',    ],
-                #['minus_dm', 'minus_dm',   ],
-                #['minus_di', 'minus_di',   ]
-                ]
+        # Document under what circumstances self._hyper_params is set
+        # If hyperopt is running, params will be set, and that means we
+        # are inside an hyperopt-learning-iteration (epoch), and should
+        # use the params to build up an indicator list with learned arguments,
+        # and return that. Hyperopt will take that list, and test how good it is.
+        # If not running hyperopt (example only backttesting, then params is empty)
+        params = self._hyper_params
+        if params:
+            # Use the params, to figure out what indicators
+            # to use, and what parameters to give them
+            return [['rsi', 'rsi', {'price':'close', 'timeperiod':14}],
+                    ['ema', 'ema',      [5]], # name is ema5
+                    ]
+        else:
+            # This is backtesting and Live parameters to use.
+            # These should be updated to the best one found
+            # by hyperopt
+            self.log.info('selecting all indicators (default)')
+            return [['rsi', 'rsi', {'price':'close', 'timeperiod':14}],
+                    ['ema', 'ema',      [5]], # name is ema5
+                    ]
 
     # what currency pairs do we use for backtesting
     def backtest_pairs(self):
@@ -180,8 +168,12 @@ class Strategy():
         :param dataframe: DataFrame
         :return: DataFrame with buy column
         """
-        if self._hyper_params:
-            return self.use_hyper_params (dataframe)
+        params = self._hyper_params
+        if params:
+            print('----------- params:', params)
+            dataframe.loc[(dataframe['rsi'] < params['rsi_bull'])
+                          ,'buy'] = 1
+            return dataframe
         else:
             dataframe.loc[crossed_above(dataframe['rsi'], 30)
                           , 'buy'] = 1
@@ -194,108 +186,26 @@ class Strategy():
         :param dataframe: DataFrame
         :return: DataFrame with buy column
         """
-        dataframe.loc[
-            crossed_below(dataframe['rsi'], 70)
-            ,
-            'sell'] = 1
-        return dataframe
+        params = self._hyper_params
+        if params:
+            dataframe.loc[(dataframe['rsi'] > params['rsi_bear'])
+                          ,'sell'] = 1
+            return dataframe
+        else:
+            # Edit: use the best parameters found
+            dataframe.loc[(dataframe['rsi'] > 70)
+                          ,'sell'] = 1
+            return dataframe
 
     # hyper optimize (learn parameters)
 
-    def buy_strategy_space(self):
-      return {
-        #'mfi': hp.choice('mfi', [
-        #    {'enabled': False},
-        #    {'enabled': True, 'value': hp.quniform('mfi-value', 5, 25, 1)}
-        #]),
-        'fastd': hp.choice('fastd', [
-            {'enabled': False},
-            {'enabled': True, 'value': hp.quniform('fastd-value', 10, 50, 1)}
-        ]),
-        #'adx': hp.choice('adx', [
-        #    {'enabled': False},
-        #    {'enabled': True, 'value': hp.quniform('adx-value', 15, 50, 1)}
-        #]),
-        'rsi': hp.choice('rsi', [
-            {'enabled': False},
-            {'enabled': True, 'value': hp.quniform('rsi-value', 20, 40, 1)}
-        ]),
-        #'uptrend_long_ema': hp.choice('uptrend_long_ema', [
-        #    {'enabled': False},
-        #    {'enabled': True}
-        #]),
-        #'uptrend_short_ema': hp.choice('uptrend_short_ema', [
-        #    {'enabled': False},
-        #    {'enabled': True}
-        #]),
-        #'over_sar': hp.choice('over_sar', [
-        #    {'enabled': False},
-        #    {'enabled': True}
-        #]),
-        #'green_candle': hp.choice('green_candle', [
-        #    {'enabled': False},
-        #    {'enabled': True}
-        #]),
-        #'uptrend_sma': hp.choice('uptrend_sma', [
-        #    {'enabled': False},
-        #    {'enabled': True}
-        #]),
-        #'trigger': hp.choice('trigger', [
-        #    #{'type': 'lower_bb'},
-        #    {'type': 'faststoch10'},
-        #    {'type': 'ao_cross_zero'},
-        #    {'type': 'ema5_cross_ema10'},
-        #    {'type': 'macd_cross_signal'},
-        #    {'type': 'sar_reversal'},
-        #    {'type': 'stochf_cross'},
-        #    {'type': 'ht_sine'},
-        #]),
-      }
+    def strategy_space(self):
+      return {'rsi_bull': hp.quniform('rsi_bull_value', 10, 40, 1),
+              'rsi_bear': hp.quniform('rsi_bear_value', 60, 90, 1)
+             }
 
     def set_hyper_params (self, params):
         self._hyper_params = params
-    def use_hyper_params (self, dataframe):
-        params = self._hyper_params
-        conditions = []
-        # GUARDS AND TRENDS
-        #if params['uptrend_long_ema']['enabled']:
-        #    conditions.append(dataframe['ema50'] > dataframe['ema100'])
-        #if params['uptrend_short_ema']['enabled']:
-        #    conditions.append(dataframe['ema5'] > dataframe['ema10'])
-        #if params['mfi']['enabled']:
-        #    conditions.append(dataframe['mfi'] < params['mfi']['value'])
-        #if params['fastd']['enabled']:
-        #    conditions.append(dataframe['fastd'] < params['fastd']['value'])
-        #if params['adx']['enabled']:
-        #    conditions.append(dataframe['adx'] > params['adx']['value'])
-        if params['rsi']['enabled']:
-            conditions.append(dataframe['rsi'] < params['rsi']['value'])
-        #if params['over_sar']['enabled']:
-        #    conditions.append(dataframe['close'] > dataframe['sar'])
-        #if params['green_candle']['enabled']:
-        #    conditions.append(dataframe['close'] > dataframe['open'])
-        #if params['uptrend_sma']['enabled']:
-        #    prevsma = dataframe['sma'].shift(1)
-        #    conditions.append(dataframe['sma'] > prevsma)
-
-        # TRIGGERS
-        #triggers = {
-        #    'lower_bb': dataframe['tema'] <= dataframe['lowerband'],
-        #    'faststoch10': (crossed_above(dataframe['fastd'], 10.0)),
-        #    'ao_cross_zero': (crossed_above(dataframe['ao'], 0.0)),
-        #    'ema5_cross_ema10': (crossed_above(dataframe['ema5'], dataframe['ema10'])),
-        #    'macd_cross_signal': (crossed_above(dataframe['macd'], dataframe['macdsignal'])),
-        #    'sar_reversal': (crossed_above(dataframe['close'], dataframe['sar'])),
-        #    'stochf_cross': (crossed_above(dataframe['fastk'], dataframe['fastd'])),
-        #    'ht_sine': (crossed_above(dataframe['leadsine'], dataframe['sine'])),
-        #}
-        #conditions.append(triggers.get(params['trigger']['type']))
-
-        dataframe.loc[
-            reduce(lambda x, y: x & y, conditions),
-            'buy'] = 1
-
-        return dataframe
 
     #
     # Live trading parameters

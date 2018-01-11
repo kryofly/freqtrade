@@ -141,7 +141,7 @@ def start(args):
               }
     fun = lambda params: optimizer(params, optargs)
 
-    best = fmin(fn=fun, space=strategy.buy_strategy_space(), algo=tpe.suggest, max_evals=args.epochs, trials=trials)
+    best = fmin(fn=fun, space=strategy.strategy_space(), algo=tpe.suggest, max_evals=args.epochs, trials=trials)
     logger.info('Best parameters:\n%s', json.dumps(best, indent=4))
     results = sorted(trials.results, key=itemgetter('loss'))
     logger.info('Best Result:\n%s', results[0]['result'])

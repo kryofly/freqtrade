@@ -2,6 +2,7 @@
 
 import random
 
+import hyperopt.pyll.stochastic
 from unittest.mock import MagicMock
 
 from freqtrade.strategy import Strategy
@@ -12,24 +13,6 @@ def setup_strategy():
     s = Strategy()
     s.set_backtest_pairs(['BTC_UNITEST'])
     return s
-
-def fiftyfifty():
-    random.random() > 0.5
-
-# KLUDGY: we rely on the default strategy space and
-#         make a pick from it
-def gen_hyper_params():
-    return {'adx':   {'enabled': fiftyfifty(), 'value': 38.0},
-            'fastd': {'enabled': fiftyfifty(), 'value': 25.0},
-            'green_candle': {'enabled': fiftyfifty()},
-            'mfi':      {'enabled': fiftyfifty()},
-            'over_sar': {'enabled': fiftyfifty()},
-            'rsi':      {'enabled': fiftyfifty(), 'value': 33.0},
-            'uptrend_long_ema': {'enabled':  fiftyfifty()},
-            'uptrend_short_ema': {'enabled': fiftyfifty()},
-            'uptrend_sma': {'enabled': fiftyfifty()},
-            'trigger': {'type': 'lower_bb'}
-           }
 
 def test_optimizer_start():
     strategy = setup_strategy()
@@ -51,8 +34,9 @@ def test_optimizer():
                'strategy': strategy,
                'processed': prepdata
               }
-    params = gen_hyper_params()
-    result = optimizer(params, optargs)
+    space  = strategy.strategy_space()
+    sample = hyperopt.pyll.stochastic.sample(space)
+    result = optimizer(sample, optargs)
     assert result['loss']
     assert result['result']
     assert result['status']
