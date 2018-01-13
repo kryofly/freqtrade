@@ -10,6 +10,13 @@ from freqtrade.analyze import populate_indicators, parse_ticker_dataframe
 from freqtrade.strategy import Strategy
 
 
+def trim_tickerlist(dl, num):
+    new = {}
+    for pair, pair_data in dl.items():
+        new[pair] = pair_data[num:]
+    return new
+
+
 def load_data(datadir: str, ticker_interval: int = 5, pairs: Optional[List[str]] = None) -> Dict[str, List]:
     """
     Loads ticker history data for the given parameters

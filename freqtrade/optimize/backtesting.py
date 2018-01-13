@@ -20,6 +20,7 @@ from freqtrade.strategy import Strategy
 from freqtrade.trade import calc_profit
 from freqtrade.dataframe import file_write_dataframe_json
 import freqtrade.misc as misc
+from freqtrade import optimize
 
 logger = logging.getLogger(__name__)
 
@@ -262,6 +263,9 @@ def start(args):
         record = True
 
     # Execute backtest and print results
+    timeperiod=args.timeperiod
+    if timeperiod:
+        data = optimize.trim_tickerlist(data, timeperiod)
     prepdata = preprocess(strategy, data)
     results = backtest({'strategy': strategy,
                         'processed': prepdata,

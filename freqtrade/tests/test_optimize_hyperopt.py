@@ -32,7 +32,8 @@ def test_optimizer():
                'target_trades': 10,
                'current_tries': 0,
                'strategy': strategy,
-               'dfs': dfs
+               'dfs': dfs,
+               'timeperiod': None
               }
     space  = strategy.strategy_space()
     sample = hyperopt.pyll.stochastic.sample(space)

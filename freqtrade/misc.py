@@ -222,6 +222,13 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         default=None,
         dest='export',
     )
+    backtesting_cmd.add_argument(
+        '--timeperiod',
+        help='Use the last N ticks of data.',
+        default=None,
+        type=int,
+        dest='timeperiod',
+    )
 
     # Add hyperopt subcommand
     hyperopt_cmd = subparsers.add_parser('hyperopt', help='hyperopt module')
@@ -248,6 +255,14 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         dest='mongodb',
         action='store_true',
     )
+    hyperopt_cmd.add_argument(
+        '--timeperiod',
+        help='Use the last N ticks of data.',
+        default=None,
+        type=int,
+        dest='timeperiod',
+    )
+
 
 # Required json-schema for user specified config
 CONF_SCHEMA = {

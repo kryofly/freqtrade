@@ -63,6 +63,9 @@ def optimizer(params, args):
     # the indicators. Caching might be possible, and
     # also check if the params hasn't change, dont recalc.
     dfs = args['dfs'] # Get the dataframes
+    timeperiod = args['timeperiod']
+    if timeperiod:
+        dfs = optimize.trim_tickerlist(dfs, timeperiod)
     prepdata = optimize.preprocess(strategy, dfs)
     results = backtest({'strategy': strategy,
                         'processed': prepdata,
@@ -156,7 +159,8 @@ def start(args):
                'target_trades': args.target_trades,
                'current_tries': 0,
                'strategy': strategy,
-               'dfs': dfs
+               'dfs': dfs,
+               'timeperiod': args.timeperiod
               }
     fun = lambda params: optimizer(params, optargs)
 
