@@ -13,7 +13,7 @@ from tabulate import tabulate
 from freqtrade import exchange
 from freqtrade.exchange import Bittrex
 from freqtrade.trade import min_roi_reached
-from freqtrade.misc import load_config, printdf
+from freqtrade.misc import printdf
 from freqtrade.optimize import load_data, preprocess
 from freqtrade.persistence import Trade
 from freqtrade.strategy import Strategy
@@ -220,7 +220,7 @@ def start(args):
     #exchange._API = Bittrex({'key': '', 'secret': ''})
 
     logger.info('Using config: %s ...', args.config)
-    config = load_config(args.config)
+    config = misc.load_config(args.config)
 
     logger.info('Using ticker_interval: %s ...', args.ticker_interval)
     

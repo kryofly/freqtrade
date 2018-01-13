@@ -37,7 +37,6 @@ def make_profit_array(data, px, filter_pairs=[]):
     # array
     print('pg has size:', len(pg))
     for trade in data:
-        print('trade:', trade)
         pair = trade[0]
         if filter_pairs and pair not in filter_pairs:
             continue
@@ -72,8 +71,9 @@ def plot_profit(strategy, args) -> None:
     filter_pairs = args.pair
 
     config = misc.load_config(args.config)
-    pairs = strategy.backtest_pairs()
-    print('pairs:', pairs)
+    pairs = config['exchange']['pair_whitelist']
+    if pairs == []: # if there was an empty pairs_whitelist in config
+        pairs = strategy.backtest_pairs()
     if filter_pairs:
         filter_pairs = filter_pairs.split(',')
         pairs = list(set(pairs) & set(filter_pairs))
