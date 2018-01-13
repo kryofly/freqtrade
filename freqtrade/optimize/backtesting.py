@@ -19,6 +19,7 @@ from freqtrade.persistence import Trade
 from freqtrade.strategy import Strategy
 from freqtrade.trade import calc_profit
 from freqtrade.dataframe import file_write_dataframe_json
+import freqtrade.misc as misc
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +31,8 @@ def zero_nan(num):
         return num
 
 def backtest_export_json(args, config, prepdata, results):
-    logger.info('export to json file %s', args.export_json)
     tickint = str(args.ticker_interval)
-    h = open(args.export_json, 'w')
+    h = open('backtest-result.json', 'w')
     h.write('{"ticker_interval": %s,\n' % tickint)
     h.write('"pairs":{\n')
     i = 0
@@ -135,6 +135,9 @@ def backtest(args) -> DataFrame:
     strategy = args['strategy']
     processed = args['processed']
     realistic = args.get('realistic', True)
+    record = args.get('record', False)
+
+    records = []
     trades = []
     #exchange._API = Bittrex({'key': '', 'secret': ''})
     for pair, pair_data in processed.items():
@@ -176,7 +179,23 @@ def backtest(args) -> DataFrame:
                         reason = 'sell signal'
                     #logger.info('*** SELL %s, date=%s [%s], close=%s profit=%s, duration=%s frames'
                     #      %(pair, row.date, reason, row.close, current_profit, row.Index - o_index))
+                    if record:
+                        # Note, need to be json.dump friendly
+                        # record a tuple of pair, current_profit_percent, entry-date, duration
+                        print(o_date, o_close)
+                        records.append((pair,
+                                        current_profit,
+                                        o_date.strftime('%s'),
+                                        row.date.strftime('%s'),
+                                        o_index,
+                                        row.Index,
+                                        ))
+
                     tr = None
+
+    if record:
+        logger.info('Dumping backtest trades')
+        misc.file_dump_json('backtest-trades.json', records)
 
     #logger.info('---- trades: ----')
     #logger.info('1 frame consist of %d minutes' % strategy.tick_interval())
@@ -238,11 +257,16 @@ def start(args):
     from freqtrade import main
     main._CONF = config # FIX: remove this
 
+    record = False
+    if args.export and args.export.find('trades') >= 0:
+        record = True
+
     # Execute backtest and print results
     prepdata = preprocess(strategy, data)
     results = backtest({'strategy': strategy,
                         'processed': prepdata,
-                        'realistic': args.realistic_simulation
+                        'realistic': args.realistic_simulation,
+                        'record': record
                        })
 
     printdf(prepdata)
@@ -252,5 +276,5 @@ def start(args):
     )
     logger.info('Dollar-Cost-Average profit: %fx' % backtest_report_cost_average(prepdata))
 
-    if args.export_json:
+    if args.export and args.export.find('result') >= 0:
         backtest_export_json(args, config, prepdata, results)

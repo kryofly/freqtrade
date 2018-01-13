@@ -216,10 +216,11 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         dest='realistic_simulation',
     )
     backtesting_cmd.add_argument(
-        '--export-json',
-        help='export backtest result to a JSON encoded file',
-        default=False,
-        dest='export_json'
+        '--export',
+        help='--export=trades,result',
+        type=str,
+        default=None,
+        dest='export',
     )
 
     # Add hyperopt subcommand
