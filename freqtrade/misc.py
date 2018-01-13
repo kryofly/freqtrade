@@ -192,16 +192,23 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
 
     subparsers = parser.add_subparsers(dest='subparser')
 
-    # Add backtesting subcommand
     backtesting_cmd = subparsers.add_parser('backtesting', help='backtesting module')
     backtesting_cmd.set_defaults(func=backtesting.start)
-    backtesting_cmd.add_argument(
+    backtesting_options(backtesting_cmd)
+
+    hyperopt_cmd = subparsers.add_parser('hyperopt', help='hyperopt module')
+    hyperopt_cmd.set_defaults(func=hyperopt.start)
+    hyperopt_options(hyperopt_cmd)
+
+
+def backtesting_options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
         '-l', '--live',
         action='store_true',
         dest='live',
         help='using live data',
     )
-    backtesting_cmd.add_argument(
+    parser.add_argument(
         '-i', '--ticker-interval',
         help='specify ticker interval in minutes (default: 5)',
         dest='ticker_interval',
@@ -209,20 +216,20 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         type=int,
         metavar='INT',
     )
-    backtesting_cmd.add_argument(
+    parser.add_argument(
         '--realistic-simulation',
         help='uses max_open_trades from strategy to simulate real world limitations',
         action='store_true',
         dest='realistic_simulation',
     )
-    backtesting_cmd.add_argument(
+    parser.add_argument(
         '--export',
         help='--export=trades,result',
         type=str,
         default=None,
         dest='export',
     )
-    backtesting_cmd.add_argument(
+    parser.add_argument(
         '--timeperiod',
         help='Use the last N ticks of data.',
         default=None,
@@ -230,10 +237,8 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         dest='timeperiod',
     )
 
-    # Add hyperopt subcommand
-    hyperopt_cmd = subparsers.add_parser('hyperopt', help='hyperopt module')
-    hyperopt_cmd.set_defaults(func=hyperopt.start)
-    hyperopt_cmd.add_argument(
+def hyperopt_options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
         '-e', '--epochs',
         help='specify number of epochs (default: 100)',
         dest='epochs',
@@ -241,7 +246,7 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         type=int,
         metavar='INT',
     )
-    hyperopt_cmd.add_argument(
+    parser.add_argument(
         '-tt', '--target_trades',
         help='specify number of trades (default: 1100)',
         dest='target_trades',
@@ -249,13 +254,13 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
         type=int,
         metavar='INT',
     )
-    hyperopt_cmd.add_argument(
+    parser.add_argument(
         '--use-mongodb',
         help='parallelize evaluations with mongodb (requires mongod in PATH)',
         dest='mongodb',
         action='store_true',
     )
-    hyperopt_cmd.add_argument(
+    parser.add_argument(
         '--timeperiod',
         help='Use the last N ticks of data.',
         default=None,
