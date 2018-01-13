@@ -64,7 +64,9 @@ def optimizer(params, args):
     # also check if the params hasn't change, dont recalc.
     dfs = args['dfs'] # Get the dataframes
     prepdata = optimize.preprocess(strategy, dfs)
-    results = backtest(strategy, prepdata)
+    results = backtest({'strategy': strategy,
+                        'processed': prepdata,
+                       })
 
     result = format_results(results)
 

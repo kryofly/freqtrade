@@ -131,20 +131,10 @@ def backtest_report_cost_average(prepdata):
         sold += vol * ema_close
     return round(sold / spent, 2) # return profit ratio
 
-def backtest(strategy: Strategy,
-             processed: Dict[str, DataFrame],
-             max_open_trades: int = 0,
-             realistic: bool = True) -> DataFrame:
-    """
-    Implements backtesting functionality
-    :param config: config to use
-    :param processed: a processed dictionary with format {pair, data}
-    :param max_open_trades: maximum number of concurrent trades (default: 0, disabled)
-    :param realistic: do we try to simulate realistic trades? (default: True)
-    :return: DataFrame
-    """
-    #logger.info('############################################################')
-    #logger.info('---- BEGIN BACKTESTING ----')
+def backtest(args) -> DataFrame:
+    strategy = args['strategy']
+    processed = args['processed']
+    realistic = args.get('realistic', True)
     trades = []
     #exchange._API = Bittrex({'key': '', 'secret': ''})
     for pair, pair_data in processed.items():
@@ -160,6 +150,7 @@ def backtest(strategy: Strategy,
                      )
         tr = None
         # FIX: reintroduce max_open_trades count and realistic flag
+        # strategy.max_open_trades
         for row in df.itertuples():
             if row.buy == 1 and tr == None:
                 tr = (row.date, row.close, row.Index)
@@ -238,13 +229,10 @@ def start(args):
     min_date, max_date = get_timeframe(data)
     logger.info('Measuring data from %s up to %s ...', min_date.isoformat(), max_date.isoformat())
 
-    max_open_trades = strategy.max_open_trades()
     # --realistic-simulation shouldn't effect concurrently
     # open trades, because that is part of a strategy
     # (back-off strategy, etc)
     # but we should simulate slippage
-
-    logger.info('Using max_open_trades: %s ...', max_open_trades)
 
     # Monkey patch config
     from freqtrade import main
@@ -252,9 +240,11 @@ def start(args):
 
     # Execute backtest and print results
     prepdata = preprocess(strategy, data)
-    results = backtest(strategy,
-                       prepdata, max_open_trades,
-                       args.realistic_simulation)
+    results = backtest({'strategy': strategy,
+                        'processed': prepdata,
+                        'realistic': args.realistic_simulation
+                       })
+
     printdf(prepdata)
     logger.info(
         '\n====================== BACKTESTING REPORT ======================================\n%s',

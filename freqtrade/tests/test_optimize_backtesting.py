@@ -82,7 +82,10 @@ def simple_backtest(config, strategy, contour, num_results):
     data = load_data_test(contour)
     processed = optimize.preprocess(strategy, data)
     assert isinstance(processed, dict)
-    results = backtest(strategy, processed, 1, True)
+    results = backtest({'strategy': strategy,
+                        'processed': processed,
+                        'realistic': True
+                       })
     # results :: <class 'pandas.core.frame.DataFrame'>
     if num_results == 0:
         assert len(results) == 0
@@ -96,8 +99,11 @@ def test_backtest(default_conf):
     strategy = setup_strategy()
 
     data = optimize.load_data('freqtrade/tests/testdata', ticker_interval=5, pairs=['BTC_ETH'])
-    print('Strategy: ', strategy)
-    results = backtest(strategy, optimize.preprocess(strategy, data), 10, True)
+    prepdata = optimize.preprocess(strategy, data)
+    results = backtest({'strategy': strategy,
+                        'processed': prepdata,
+                        'realistic': True
+                       })
     num_resutls = len(results)
     assert num_resutls > 0
 
@@ -107,13 +113,21 @@ def test_1min_ticker_interval(default_conf):
 
     # Run a backtesting for an exiting 5min ticker_interval
     data = optimize.load_data('freqtrade/tests/testdata', ticker_interval=1, pairs=['BTC_UNITEST'])
-    results = backtest(strategy, optimize.preprocess(strategy, data), 1, True)
+    prepdata = optimize.preprocess(strategy, data)
+    results = backtest({'strategy': strategy,
+                        'processed': prepdata,
+                        'realistic': True
+                       })
     assert len(results) > 0
 
     # Run a backtesting for 5min ticker_interval
     with pytest.raises(FileNotFoundError):
         data = optimize.load_data('freqtrade/tests/testdata', ticker_interval=5, pairs=['BTC_UNITEST'])
-        results = backtest(strategy, optimize.preprocess(strategy, data), 1, True)
+        prepdata = optimize.preprocess(strategy, data)
+        results = backtest({'strategy': strategy,
+                            'processed': prepdata,
+                            'realistic': True
+                           })
 
 def test_processed(default_conf):
     strategy = setup_strategy()
@@ -131,7 +145,10 @@ def test_backtest_export(default_conf):
     data = load_data_test('sine')
     prepdata = optimize.preprocess(strategy, data)
     assert isinstance(prepdata, dict)
-    results = backtest(strategy, prepdata, 1, True)
+    results = backtest({'strategy': strategy,
+                        'processed': prepdata,
+                        'realistic': True
+                       })
     args = MagicMock()
     args.ticker_interval = strategy.tick_interval()
     args.export_json = 'tmp_testdata_bt.json'
@@ -151,7 +168,10 @@ def test_backtest_generate_text_table(default_conf):
     strategy = setup_strategy()
     data = load_data_test('sine')
     prepdata = optimize.preprocess(strategy, data)
-    results = backtest(strategy, prepdata, 1, True)
+    results = backtest({'strategy': strategy,
+                        'processed': prepdata,
+                        'realistic': True
+                       })
     txt = generate_text_table(data, results, strategy.tick_interval())
     assert isinstance(txt, str)
 
