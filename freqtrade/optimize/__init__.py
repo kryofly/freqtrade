@@ -9,6 +9,7 @@ from pandas import DataFrame
 from freqtrade.analyze import populate_indicators, parse_ticker_dataframe
 from freqtrade.strategy import Strategy
 
+
 def load_data(datadir: str, ticker_interval: int = 5, pairs: Optional[List[str]] = None) -> Dict[str, List]:
     """
     Loads ticker history data for the given parameters
