@@ -32,7 +32,7 @@ def test_optimizer():
                'target_trades': 10,
                'current_tries': 0,
                'strategy': strategy,
-               'processed': prepdata
+               'dfs': dfs
               }
     space  = strategy.strategy_space()
     sample = hyperopt.pyll.stochastic.sample(space)

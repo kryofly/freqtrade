@@ -9,7 +9,7 @@ from functools import reduce
 from math import exp
 from operator import itemgetter
 
-from hyperopt import fmin, tpe, hp, Trials, STATUS_OK
+from hyperopt import fmin, tpe, hp, Trials, STATUS_OK, space_eval, STATUS_FAIL
 from hyperopt.mongoexp import MongoTrials
 from pandas import DataFrame
 
@@ -53,22 +53,39 @@ def log_results(results):
         sys.stdout.flush()
 
 def optimizer(params, args):
+    status = STATUS_OK
     strategy = args['strategy']
 
     from freqtrade.optimize import backtesting
     strategy.set_hyper_params(params)
 
-    results = backtest(strategy, args['processed'])
+    # This is very costly, to for each iteration recalculate
+    # the indicators. Caching might be possible, and
+    # also check if the params hasn't change, dont recalc.
+    dfs = args['dfs'] # Get the dataframes
+    prepdata = optimize.preprocess(strategy, dfs)
+    results = backtest(strategy, prepdata)
 
     result = format_results(results)
 
     total_profit = results.profit.sum() * 1000
     if math.isnan(total_profit):
+        status = STATUS_FAIL
         total_profit = 0
     trade_count = len(results.index)
     target_trades = args['target_trades']
+    # expresses a loss as a distance from target number of trades, to resulting number of trades
+    # The exp returns a parabolic that is 1 if trade_count - target_trades = 0
+    # And less than 1 down to zero if trade_count differs from target_trades (0.1 = 500 diff)
     trade_loss = 1 - 0.35 * exp(-(trade_count - target_trades) ** 2 / 10 ** 5.2)
+
+    # FIX: a very large profit is capped by the max, why not take the log instead?
     profit_loss = max(0, 1 - total_profit / 10000)  # max profit 10000
+    loss = trade_loss + profit_loss
+
+    #loss = -total_profit
+
+    print(result, '#', total_profit, '#', trade_count, '#', trade_loss, '#', profit_loss)
 
     args['current_tries'] += 1
 
@@ -89,8 +106,8 @@ def optimizer(params, args):
     log_results(result_data)
 
     return {
-        'loss': trade_loss + profit_loss,
-        'status': STATUS_OK,
+        'loss': loss,
+        'status': status,
         'result': result
     }
 
@@ -106,6 +123,7 @@ def format_results(results: DataFrame):
 
 def start(args):
 
+    global SPACE
     # Initialize logger
     logging.basicConfig(
         level=args.loglevel,
@@ -131,17 +149,21 @@ def start(args):
                              strategy.backtest_pairs())
     # preprocess it by adding INDicators/OSCillators and
     # also BUY/SELL trigger-vectors
-    prepdata = optimize.preprocess(strategy, dfs)
 
     optargs = {'epochs': args.epochs,
                'target_trades': args.target_trades,
                'current_tries': 0,
                'strategy': strategy,
-               'processed': prepdata
+               'dfs': dfs
               }
     fun = lambda params: optimizer(params, optargs)
 
     best = fmin(fn=fun, space=strategy.strategy_space(), algo=tpe.suggest, max_evals=args.epochs, trials=trials)
-    logger.info('Best parameters:\n%s', json.dumps(best, indent=4))
+
+    # Improve best parameter logging display
+    if best:
+        best = space_eval(strategy.strategy_space(), best)
+        logger.info('SPACE Best parameters:\n%s', json.dumps(best, indent=4))
+
     results = sorted(trials.results, key=itemgetter('loss'))
     logger.info('Best Result:\n%s', results[0]['result'])
